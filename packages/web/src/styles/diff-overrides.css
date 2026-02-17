@@ -1,0 +1,40 @@
+/* Dark theme overrides for react-diff-view */
+:root {
+  --diff-background-color: #0d1117;
+  --diff-text-color: #c9d1d9;
+  --diff-font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --diff-selection-background-color: #264f78;
+  --diff-selection-text-color: #c9d1d9;
+  --diff-gutter-insert-background-color: #1a4721;
+  --diff-gutter-delete-background-color: #5c2326;
+  --diff-code-insert-background-color: #12261e;
+  --diff-code-delete-background-color: #2d1316;
+  --diff-code-insert-edit-background-color: #1a4721;
+  --diff-code-delete-edit-background-color: #5c2326;
+  --diff-code-selected-background-color: #1c2d3f;
+  --diff-omit-gutter-line-color: #6e7681;
+}
+
+.diff {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.diff-gutter {
+  cursor: pointer;
+  user-select: none;
+  min-width: 40px;
+  padding: 0 8px;
+  color: #6e7681;
+}
+
+.diff-gutter:hover {
+  color: #c9d1d9;
+  background-color: #1f6feb33;
+}
+
+.diff-widget-content {
+  padding: 4px 16px;
+  background-color: #161b22;
+}

@@ -1,0 +1,10 @@
+{
+  "name": "codechat",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:cli": "pnpm --filter @codechat/cli build",
+    "build:web": "pnpm --filter @codechat/web build",
+    "dev:web": "pnpm --filter @codechat/web dev"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@codechat/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "codechat": "./dist/cli.js",
+    "codechat-mcp": "./dist/mcp-server.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "parse-diff": "^0.11.1",
+    "ws": "^8.19.0",
+    "open": "^10.1.0",
+    "zod": "^3.24.0",
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "@types/ws": "^8.5.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
