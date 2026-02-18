@@ -83,6 +83,9 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         break;
       case 'review_complete':
         dispatch({ type: 'REVIEW_COMPLETE' });
+        // Auto-close the window after a brief delay.
+        // Works in Chrome app mode; silently fails in regular tabs.
+        setTimeout(() => window.close(), 500);
         break;
     }
   }, [lastMessage]);

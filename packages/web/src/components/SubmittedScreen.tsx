@@ -17,9 +17,18 @@ export function SubmittedScreen() {
         <div className="mb-2 text-xl font-semibold" style={{ color: '#e6edf3' }}>
           Review submitted
         </div>
-        <div className="text-sm" style={{ color: '#484f58' }}>
-          You can close this tab.
+        <div className="mb-4 text-sm" style={{ color: '#484f58' }}>
+          This window should close automatically.
         </div>
+        <button
+          onClick={() => window.close()}
+          className="rounded-md px-4 py-1.5 text-sm font-medium"
+          style={{ color: '#8b949e', border: '1px solid #30363d', backgroundColor: 'transparent' }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#161b22')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          Close window
+        </button>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import open from 'open';
 import { isGitRepo, getRepoRoot, getDiff, parseFileSummaries } from './git.js';
 import {
   createSession,
@@ -12,6 +11,7 @@ import {
 } from './session.js';
 import { startReviewServer } from './server.js';
 import { getWebDistPath } from './paths.js';
+import { openAppMode } from './browser.js';
 
 function printUsage(): void {
   console.error(`
@@ -76,7 +76,7 @@ async function runReview(options: {
   console.error(`Reviewing ${files.length} file(s)\n`);
 
   if (!options['no-open']) {
-    await open(server.url);
+    await openAppMode(server.url);
   }
 
   const result = await server.result;
