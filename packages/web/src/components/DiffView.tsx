@@ -24,25 +24,29 @@ export function DiffView({ activeFile }: DiffViewProps) {
   if (!state.review) return null;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-950 p-4">
-      <div className="mb-4 flex gap-2">
+    <div className="flex-1 overflow-y-auto px-6 py-4" style={{ backgroundColor: '#0d1117' }}>
+      <div
+        className="mb-4 inline-flex overflow-hidden rounded-md"
+        style={{ border: '1px solid #30363d' }}
+      >
         <button
           onClick={() => setViewType('unified')}
-          className={`rounded px-3 py-1 text-sm ${
-            viewType === 'unified'
-              ? 'bg-gray-700 text-white'
-              : 'text-gray-400 hover:text-gray-200'
-          }`}
+          className="px-3 py-1 text-xs font-medium"
+          style={{
+            backgroundColor: viewType === 'unified' ? '#21262d' : 'transparent',
+            color: viewType === 'unified' ? '#e6edf3' : '#8b949e',
+            borderRight: '1px solid #30363d',
+          }}
         >
           Unified
         </button>
         <button
           onClick={() => setViewType('split')}
-          className={`rounded px-3 py-1 text-sm ${
-            viewType === 'split'
-              ? 'bg-gray-700 text-white'
-              : 'text-gray-400 hover:text-gray-200'
-          }`}
+          className="px-3 py-1 text-xs font-medium"
+          style={{
+            backgroundColor: viewType === 'split' ? '#21262d' : 'transparent',
+            color: viewType === 'split' ? '#e6edf3' : '#8b949e',
+          }}
         >
           Split
         </button>
@@ -59,7 +63,7 @@ export function DiffView({ activeFile }: DiffViewProps) {
           <div
             key={filePath}
             id={`file-${encodeURIComponent(filePath)}`}
-            className="mb-6"
+            className="mb-4"
           >
             {fileSummary && (
               <FileHeader file={fileSummary} commentCount={fileComments.length} />
@@ -85,7 +89,6 @@ interface FileDiffSectionProps {
 }
 
 function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSectionProps) {
-  const { send } = useReview();
   const [commentingOnKey, setCommentingOnKey] = useState<string | null>(null);
   const [commentingLineInfo, setCommentingLineInfo] = useState<{
     line: number;
@@ -95,7 +98,6 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
   const widgets = useMemo(() => {
     const w: Record<string, ReactNode> = {};
 
-    // Group existing comments by changeKey
     const commentsByKey = new Map<string, Comment[]>();
     for (const comment of comments) {
       const changeKey = commentToChangeKey(comment, file.hunks);
@@ -106,14 +108,12 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
       }
     }
 
-    // Render existing comment widgets
     for (const [changeKey, keyComments] of commentsByKey) {
       w[changeKey] = (
         <CommentWidget
           comments={keyComments}
           onReply={() => {
             setCommentingOnKey(changeKey);
-            // Extract line info from the first comment
             const c = keyComments[0];
             setCommentingLineInfo({ line: c.line, side: c.side });
           }}
@@ -121,7 +121,6 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
       );
     }
 
-    // Active comment form
     if (commentingOnKey && commentingLineInfo) {
       const existing = w[commentingOnKey];
       w[commentingOnKey] = (
@@ -164,14 +163,32 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
 
   if (file.hunks.length === 0) {
     return (
-      <div className="rounded-b border border-t-0 border-gray-700 bg-gray-900 p-4 text-sm text-gray-500">
+      <div
+        className="p-4 text-sm"
+        style={{
+          backgroundColor: '#161b22',
+          color: '#484f58',
+          border: '1px solid #30363d',
+          borderTop: 'none',
+          borderBottomLeftRadius: 6,
+          borderBottomRightRadius: 6,
+        }}
+      >
         No changes to display
       </div>
     );
   }
 
   return (
-    <div className="diff-wrapper overflow-x-auto rounded-b border border-t-0 border-gray-700">
+    <div
+      className="overflow-x-auto"
+      style={{
+        border: '1px solid #30363d',
+        borderTop: 'none',
+        borderBottomLeftRadius: 6,
+        borderBottomRightRadius: 6,
+      }}
+    >
       <Diff
         viewType={viewType}
         diffType={file.type}

@@ -39,32 +39,45 @@ export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps
   }
 
   return (
-    <div className="my-1 rounded border border-gray-600 bg-gray-800 p-3">
+    <div
+      className="my-2 rounded-md p-3"
+      style={{ backgroundColor: '#0d1117', border: '1px solid #30363d' }}
+    >
       <textarea
         ref={textareaRef}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Leave a comment..."
+        placeholder="Leave a comment"
         rows={3}
-        className="w-full resize-y rounded border border-gray-600 bg-gray-900 p-2 text-sm text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+        className="w-full resize-y rounded-md p-2 text-sm"
+        style={{
+          backgroundColor: '#010409',
+          color: '#e6edf3',
+          border: '1px solid #30363d',
+          outline: 'none',
+        }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = '#58a6ff')}
+        onBlur={(e) => (e.currentTarget.style.borderColor = '#30363d')}
       />
       <div className="mt-2 flex items-center gap-2">
         <button
           onClick={handleSubmit}
           disabled={!body.trim()}
-          className="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+          className="rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-40"
+          style={{ backgroundColor: '#238636', color: '#ffffff', border: '1px solid rgba(240,246,252,0.1)' }}
         >
-          Comment
+          Add comment
         </button>
         <button
           onClick={onCancel}
-          className="rounded px-3 py-1 text-sm text-gray-400 hover:text-gray-200"
+          className="rounded-md px-3 py-1.5 text-sm"
+          style={{ color: '#8b949e' }}
         >
           Cancel
         </button>
-        <span className="ml-auto text-xs text-gray-500">
-          Ctrl+Enter to submit
+        <span className="ml-auto text-xs" style={{ color: '#484f58' }}>
+          {navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+Enter to submit
         </span>
       </div>
     </div>

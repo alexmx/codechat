@@ -1,40 +1,103 @@
-/* Dark theme overrides for react-diff-view */
+/* GitHub dark mode diff theme */
 :root {
   --diff-background-color: #0d1117;
-  --diff-text-color: #c9d1d9;
-  --diff-font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --diff-text-color: #e6edf3;
+  --diff-font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --diff-selection-background-color: #264f78;
-  --diff-selection-text-color: #c9d1d9;
-  --diff-gutter-insert-background-color: #1a4721;
-  --diff-gutter-delete-background-color: #5c2326;
-  --diff-code-insert-background-color: #12261e;
-  --diff-code-delete-background-color: #2d1316;
-  --diff-code-insert-edit-background-color: #1a4721;
-  --diff-code-delete-edit-background-color: #5c2326;
-  --diff-code-selected-background-color: #1c2d3f;
-  --diff-omit-gutter-line-color: #6e7681;
+  --diff-selection-text-color: #e6edf3;
+  --diff-gutter-insert-background-color: #1b4721;
+  --diff-gutter-delete-background-color: #67060c;
+  --diff-code-insert-background-color: rgba(46, 160, 67, 0.15);
+  --diff-code-delete-background-color: rgba(248, 81, 73, 0.15);
+  --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.4);
+  --diff-code-delete-edit-background-color: rgba(248, 81, 73, 0.4);
+  --diff-code-selected-background-color: rgba(56, 139, 253, 0.15);
+  --diff-omit-gutter-line-color: #484f58;
 }
 
+/* Table reset */
 .diff {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 20px;
+  tab-size: 4;
 }
 
+/* Code cells */
+.diff-code {
+  padding: 0 16px;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* Gutter (line numbers) */
 .diff-gutter {
   cursor: pointer;
   user-select: none;
-  min-width: 40px;
-  padding: 0 8px;
-  color: #6e7681;
+  width: 1%;
+  min-width: 50px;
+  padding: 0 10px;
+  text-align: right;
+  color: #484f58;
+  font-size: 12px;
+  line-height: 20px;
+  vertical-align: top;
+  white-space: nowrap;
 }
 
 .diff-gutter:hover {
-  color: #c9d1d9;
-  background-color: #1f6feb33;
+  color: #e6edf3;
+}
+
+/* Add "+" indicator on hover for commenting */
+.diff-gutter::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+}
+
+.diff-gutter-insert:hover,
+.diff-gutter-delete:hover,
+.diff-gutter-normal:hover {
+  cursor: pointer;
+  background-color: rgba(56, 139, 253, 0.3);
+}
+
+/* Hunk header / separator */
+.diff-hunk-header {
+  background-color: rgba(56, 139, 253, 0.1);
+  color: #484f58;
+  padding: 0 10px;
+}
+
+.diff-hunk-header-content {
+  font-size: 12px;
+}
+
+/* Widget rows (comment containers) */
+.diff-widget {
+  background-color: #161b22;
 }
 
 .diff-widget-content {
-  padding: 4px 16px;
+  padding: 8px 16px;
   background-color: #161b22;
+  border-top: 1px solid #30363d;
+  border-bottom: 1px solid #30363d;
+}
+
+/* Line hover state */
+.diff-line:hover .diff-gutter {
+  color: #e6edf3;
+}
+
+/* Decoration / expand rows */
+.diff-decoration {
+  background-color: #161b22;
+}
+
+.diff-decoration-content {
+  color: #484f58;
+  padding: 4px 10px;
 }

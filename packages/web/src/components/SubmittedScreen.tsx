@@ -1,9 +1,25 @@
 export function SubmittedScreen() {
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-950 text-gray-300">
+    <div
+      className="flex h-screen items-center justify-center"
+      style={{ backgroundColor: '#0d1117' }}
+    >
       <div className="text-center">
-        <div className="mb-2 text-2xl font-semibold">Review Submitted</div>
-        <div className="text-sm text-gray-500">You can close this tab.</div>
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 16 16"
+          fill="#3fb950"
+          className="mx-auto mb-4"
+        >
+          <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z" />
+        </svg>
+        <div className="mb-2 text-xl font-semibold" style={{ color: '#e6edf3' }}>
+          Review submitted
+        </div>
+        <div className="text-sm" style={{ color: '#484f58' }}>
+          You can close this tab.
+        </div>
       </div>
     </div>
   );

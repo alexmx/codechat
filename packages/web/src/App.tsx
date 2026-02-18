@@ -20,7 +20,7 @@ function AppContent() {
   if (state.isSubmitted) return <SubmittedScreen />;
 
   return (
-    <div className="flex h-screen flex-col bg-gray-950 text-gray-200">
+    <div className="flex h-screen flex-col" style={{ backgroundColor: '#0d1117', color: '#e6edf3' }}>
       <ReviewHeader />
       <div className="flex flex-1 overflow-hidden">
         <FileList activeFile={activeFile} onSelectFile={handleSelectFile} />

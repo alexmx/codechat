@@ -142,8 +142,14 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
               comments: review.comments,
             };
 
-            // Graceful shutdown
+            // Close all WebSocket clients first
+            for (const client of wss.clients) {
+              client.close();
+            }
             wss.close();
+
+            // Force-close all open sockets so httpServer.close() can complete
+            httpServer.closeAllConnections();
             httpServer.close(() => resolveResult(result));
             break;
           }
