@@ -15,6 +15,9 @@
   --diff-code-delete-edit-background-color: rgba(248, 81, 73, 0.4);
   --diff-code-selected-background-color: rgba(56, 139, 253, 0.15);
   --diff-omit-gutter-line-color: var(--color-text-muted);
+  --diff-gutter-insert-text: rgba(139, 148, 158, 0.85);
+  --diff-gutter-delete-text: rgba(139, 148, 158, 0.85);
+  --diff-gutter-hover-bg: rgba(56, 139, 253, 0.4);
 
   /* Syntax highlighting tokens */
   --syntax-comment: #8b949e;
@@ -35,6 +38,9 @@
     --diff-selection-background-color: rgba(9, 105, 218, 0.2);
     --diff-gutter-insert-background-color: #ccffd8;
     --diff-gutter-delete-background-color: #ffd7d5;
+    --diff-gutter-insert-text: rgba(101, 109, 118, 0.85);
+    --diff-gutter-delete-text: rgba(101, 109, 118, 0.85);
+    --diff-gutter-hover-bg: rgba(9, 105, 218, 0.3);
     --diff-code-insert-background-color: rgba(46, 160, 67, 0.1);
     --diff-code-delete-background-color: rgba(248, 81, 73, 0.1);
     --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.3);
@@ -58,6 +64,9 @@
   --diff-selection-background-color: rgba(9, 105, 218, 0.2);
   --diff-gutter-insert-background-color: #ccffd8;
   --diff-gutter-delete-background-color: #ffd7d5;
+  --diff-gutter-insert-text: rgba(101, 109, 118, 0.85);
+  --diff-gutter-delete-text: rgba(101, 109, 118, 0.85);
+  --diff-gutter-hover-bg: rgba(9, 105, 218, 0.3);
   --diff-code-insert-background-color: rgba(46, 160, 67, 0.1);
   --diff-code-delete-background-color: rgba(248, 81, 73, 0.1);
   --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.3);
@@ -80,6 +89,9 @@
   --diff-selection-background-color: #264f78;
   --diff-gutter-insert-background-color: #1b4721;
   --diff-gutter-delete-background-color: #67060c;
+  --diff-gutter-insert-text: rgba(139, 148, 158, 0.85);
+  --diff-gutter-delete-text: rgba(139, 148, 158, 0.85);
+  --diff-gutter-hover-bg: rgba(56, 139, 253, 0.4);
   --diff-code-insert-background-color: rgba(46, 160, 67, 0.15);
   --diff-code-delete-background-color: rgba(248, 81, 73, 0.15);
   --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.4);
@@ -118,9 +130,10 @@
 .diff-gutter {
   cursor: pointer;
   user-select: none;
+  position: relative;
   width: 1%;
   min-width: 50px;
-  padding: 0 10px;
+  padding: 0 10px 0 22px;
   text-align: right;
   color: var(--color-text-muted);
   font-size: 12px;
@@ -129,22 +142,42 @@
   white-space: nowrap;
 }
 
+/* Improve contrast: lighten line numbers on colored gutter rows */
+.diff-gutter-insert {
+  color: var(--diff-gutter-insert-text);
+}
+
+.diff-gutter-delete {
+  color: var(--diff-gutter-delete-text);
+}
+
+/* Plus icon — hidden by default, shown on hover */
+.diff-gutter::after {
+  content: '+';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 16px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+  background-color: var(--color-info);
+  color: var(--color-text-on-emphasis);
+}
+
+.diff-gutter:hover::after {
+  opacity: 1;
+}
+
 .diff-gutter:hover {
+  background-color: var(--diff-gutter-hover-bg) !important;
   color: var(--color-text-primary);
-}
-
-/* Add "+" indicator on hover for commenting */
-.diff-gutter::before {
-  content: '';
-  display: inline-block;
-  width: 0;
-}
-
-.diff-gutter-insert:hover,
-.diff-gutter-delete:hover,
-.diff-gutter-normal:hover {
-  cursor: pointer;
-  background-color: rgba(56, 139, 253, 0.3);
 }
 
 /* Hunk header / separator */
@@ -170,10 +203,7 @@
   border-bottom: 1px solid var(--color-border-default);
 }
 
-/* Line hover state */
-.diff-line:hover .diff-gutter {
-  color: var(--color-text-primary);
-}
+/* Line hover — show plus icon via gutter hover above */
 
 /* Decoration / expand rows */
 .diff-decoration {

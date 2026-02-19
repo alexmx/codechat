@@ -31,7 +31,6 @@ const DeleteCommentSchema = z.object({
 
 const SubmitReviewSchema = z.object({
   type: z.literal('submit_review'),
-  data: z.object({ status: z.enum(['approved', 'changes_requested']) }),
 });
 
 const ClientMessageSchema = z.discriminatedUnion('type', [
@@ -166,7 +165,7 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
           }
 
           case 'submit_review': {
-            const { status } = msg.data;
+            const status = review.comments.length > 0 ? 'changes_requested' : 'approved';
             review.status = status;
             await saveSession(session);
             broadcast(wss, { type: 'review_complete' });

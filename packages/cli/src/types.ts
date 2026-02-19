@@ -57,4 +57,4 @@ export type ServerMessage =
 export type ClientMessage =
   | { type: 'add_comment'; data: Omit<Comment, 'id' | 'createdAt'> }
   | { type: 'delete_comment'; data: { id: string } }
-  | { type: 'submit_review'; data: { status: 'approved' | 'changes_requested' } };
+  | { type: 'submit_review' };
