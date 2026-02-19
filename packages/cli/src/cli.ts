@@ -11,7 +11,7 @@ import {
 } from './session.js';
 import { startReviewServer } from './server.js';
 import { getWebDistPath } from './paths.js';
-import { openAppMode } from './browser.js';
+import open from 'open';
 
 function printUsage(): void {
   console.error(`
@@ -76,7 +76,7 @@ async function runReview(options: {
   console.error(`Reviewing ${files.length} file(s)\n`);
 
   if (!options['no-open']) {
-    await openAppMode(server.url);
+    await open(server.url);
   }
 
   const result = await server.result;

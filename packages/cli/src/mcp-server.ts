@@ -13,7 +13,7 @@ import {
 } from './session.js';
 import { startReviewServer } from './server.js';
 import { getWebDistPath } from './paths.js';
-import { openAppMode } from './browser.js';
+import open from 'open';
 
 const server = new McpServer({
   name: 'codechat',
@@ -68,7 +68,7 @@ server.tool(
 
     process.stderr.write(`CodeChat review: ${reviewServer.url}\n`);
 
-    await openAppMode(reviewServer.url);
+    await open(reviewServer.url);
 
     const result = await reviewServer.result;
 
