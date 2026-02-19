@@ -1,10 +1,12 @@
-/* GitHub dark mode diff theme */
+/* ── Diff theme (responds to --color-* tokens from app.css) ─── */
+
+/* Diff library CSS custom properties */
 :root {
-  --diff-background-color: #0d1117;
-  --diff-text-color: #e6edf3;
+  --diff-background-color: var(--color-page-bg);
+  --diff-text-color: var(--color-text-primary);
   --diff-font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --diff-selection-background-color: #264f78;
-  --diff-selection-text-color: #e6edf3;
+  --diff-selection-text-color: var(--color-text-primary);
   --diff-gutter-insert-background-color: #1b4721;
   --diff-gutter-delete-background-color: #67060c;
   --diff-code-insert-background-color: rgba(46, 160, 67, 0.15);
@@ -12,10 +14,91 @@
   --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.4);
   --diff-code-delete-edit-background-color: rgba(248, 81, 73, 0.4);
   --diff-code-selected-background-color: rgba(56, 139, 253, 0.15);
-  --diff-omit-gutter-line-color: #484f58;
+  --diff-omit-gutter-line-color: var(--color-text-muted);
+
+  /* Syntax highlighting tokens */
+  --syntax-comment: #8b949e;
+  --syntax-punctuation: #e6edf3;
+  --syntax-property: #79c0ff;
+  --syntax-string: #a5d6ff;
+  --syntax-operator: #79c0ff;
+  --syntax-function: #d2a8ff;
+  --syntax-keyword: #ff7b72;
+  --syntax-regex: #ffa657;
+  --syntax-deleted: #ffa198;
+  --syntax-inserted: #7ee787;
 }
 
-/* Table reset */
+/* Auto-detect light: diff-specific overrides */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --diff-selection-background-color: rgba(9, 105, 218, 0.2);
+    --diff-gutter-insert-background-color: #ccffd8;
+    --diff-gutter-delete-background-color: #ffd7d5;
+    --diff-code-insert-background-color: rgba(46, 160, 67, 0.1);
+    --diff-code-delete-background-color: rgba(248, 81, 73, 0.1);
+    --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.3);
+    --diff-code-delete-edit-background-color: rgba(248, 81, 73, 0.3);
+
+    --syntax-comment: #57606a;
+    --syntax-punctuation: #1f2328;
+    --syntax-property: #0550ae;
+    --syntax-string: #0a3069;
+    --syntax-operator: #0550ae;
+    --syntax-function: #8250df;
+    --syntax-keyword: #cf222e;
+    --syntax-regex: #953800;
+    --syntax-deleted: #cf222e;
+    --syntax-inserted: #1a7f37;
+  }
+}
+
+/* Manual override: light */
+[data-theme="light"] {
+  --diff-selection-background-color: rgba(9, 105, 218, 0.2);
+  --diff-gutter-insert-background-color: #ccffd8;
+  --diff-gutter-delete-background-color: #ffd7d5;
+  --diff-code-insert-background-color: rgba(46, 160, 67, 0.1);
+  --diff-code-delete-background-color: rgba(248, 81, 73, 0.1);
+  --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.3);
+  --diff-code-delete-edit-background-color: rgba(248, 81, 73, 0.3);
+
+  --syntax-comment: #57606a;
+  --syntax-punctuation: #1f2328;
+  --syntax-property: #0550ae;
+  --syntax-string: #0a3069;
+  --syntax-operator: #0550ae;
+  --syntax-function: #8250df;
+  --syntax-keyword: #cf222e;
+  --syntax-regex: #953800;
+  --syntax-deleted: #cf222e;
+  --syntax-inserted: #1a7f37;
+}
+
+/* Manual override: dark (restores defaults) */
+[data-theme="dark"] {
+  --diff-selection-background-color: #264f78;
+  --diff-gutter-insert-background-color: #1b4721;
+  --diff-gutter-delete-background-color: #67060c;
+  --diff-code-insert-background-color: rgba(46, 160, 67, 0.15);
+  --diff-code-delete-background-color: rgba(248, 81, 73, 0.15);
+  --diff-code-insert-edit-background-color: rgba(46, 160, 67, 0.4);
+  --diff-code-delete-edit-background-color: rgba(248, 81, 73, 0.4);
+
+  --syntax-comment: #8b949e;
+  --syntax-punctuation: #e6edf3;
+  --syntax-property: #79c0ff;
+  --syntax-string: #a5d6ff;
+  --syntax-operator: #79c0ff;
+  --syntax-function: #d2a8ff;
+  --syntax-keyword: #ff7b72;
+  --syntax-regex: #ffa657;
+  --syntax-deleted: #ffa198;
+  --syntax-inserted: #7ee787;
+}
+
+/* ── Table reset ──────────────────────────────────────── */
+
 .diff {
   width: 100%;
   border-collapse: collapse;
@@ -39,7 +122,7 @@
   min-width: 50px;
   padding: 0 10px;
   text-align: right;
-  color: #484f58;
+  color: var(--color-text-muted);
   font-size: 12px;
   line-height: 20px;
   vertical-align: top;
@@ -47,7 +130,7 @@
 }
 
 .diff-gutter:hover {
-  color: #e6edf3;
+  color: var(--color-text-primary);
 }
 
 /* Add "+" indicator on hover for commenting */
@@ -67,7 +150,7 @@
 /* Hunk header / separator */
 .diff-hunk-header {
   background-color: rgba(56, 139, 253, 0.1);
-  color: #484f58;
+  color: var(--color-text-muted);
   padding: 0 10px;
 }
 
@@ -77,41 +160,42 @@
 
 /* Widget rows (comment containers) */
 .diff-widget {
-  background-color: #161b22;
+  background-color: var(--color-surface-bg);
 }
 
 .diff-widget-content {
   padding: 8px 16px;
-  background-color: #161b22;
-  border-top: 1px solid #30363d;
-  border-bottom: 1px solid #30363d;
+  background-color: var(--color-surface-bg);
+  border-top: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
 }
 
 /* Line hover state */
 .diff-line:hover .diff-gutter {
-  color: #e6edf3;
+  color: var(--color-text-primary);
 }
 
 /* Decoration / expand rows */
 .diff-decoration {
-  background-color: #161b22;
+  background-color: var(--color-surface-bg);
 }
 
 .diff-decoration-content {
-  color: #484f58;
+  color: var(--color-text-muted);
   padding: 4px 10px;
 }
 
-/* ── Syntax highlighting tokens (GitHub dark mode) ────────────── */
+/* ── Syntax highlighting tokens ───────────────────────── */
+
 .diff-code .token.comment,
 .diff-code .token.prolog,
 .diff-code .token.doctype,
 .diff-code .token.cdata {
-  color: #8b949e;
+  color: var(--syntax-comment);
 }
 
 .diff-code .token.punctuation {
-  color: #e6edf3;
+  color: var(--syntax-punctuation);
 }
 
 .diff-code .token.namespace {
@@ -124,7 +208,7 @@
 .diff-code .token.number,
 .diff-code .token.constant,
 .diff-code .token.symbol {
-  color: #79c0ff;
+  color: var(--syntax-property);
 }
 
 .diff-code .token.selector,
@@ -132,30 +216,30 @@
 .diff-code .token.string,
 .diff-code .token.char,
 .diff-code .token.builtin {
-  color: #a5d6ff;
+  color: var(--syntax-string);
 }
 
 .diff-code .token.operator,
 .diff-code .token.entity,
 .diff-code .token.url,
 .diff-code .token.variable {
-  color: #79c0ff;
+  color: var(--syntax-operator);
 }
 
 .diff-code .token.atrule,
 .diff-code .token.attr-value,
 .diff-code .token.function,
 .diff-code .token.class-name {
-  color: #d2a8ff;
+  color: var(--syntax-function);
 }
 
 .diff-code .token.keyword {
-  color: #ff7b72;
+  color: var(--syntax-keyword);
 }
 
 .diff-code .token.regex,
 .diff-code .token.important {
-  color: #ffa657;
+  color: var(--syntax-regex);
 }
 
 .diff-code .token.important,
@@ -168,11 +252,11 @@
 }
 
 .diff-code .token.deleted {
-  color: #ffa198;
+  color: var(--syntax-deleted);
 }
 
 .diff-code .token.inserted {
-  color: #7ee787;
+  color: var(--syntax-inserted);
 }
 
 /* markEdits enhancer — character-level edit highlights */

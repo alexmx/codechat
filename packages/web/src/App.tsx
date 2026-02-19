@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ReviewProvider, useReview } from './context/ReviewContext';
+import { useTheme } from './hooks/useTheme';
 import { ReviewHeader } from './components/ReviewHeader';
 import { FileList } from './components/FileList';
 import { DiffView } from './components/DiffView';
@@ -9,6 +10,7 @@ import { SubmittedScreen } from './components/SubmittedScreen';
 function AppContent() {
   const { state } = useReview();
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  useTheme(); // Ensures data-theme attribute stays in sync
 
   const handleSelectFile = useCallback((path: string) => {
     setActiveFile(path);
@@ -20,7 +22,7 @@ function AppContent() {
   if (state.isSubmitted) return <SubmittedScreen />;
 
   return (
-    <div className="flex h-screen flex-col" style={{ backgroundColor: '#0d1117', color: '#e6edf3' }}>
+    <div className="flex h-screen flex-col" style={{ backgroundColor: 'var(--color-page-bg)', color: 'var(--color-text-primary)' }}>
       <ReviewHeader />
       <div className="flex flex-1 overflow-hidden">
         <FileList activeFile={activeFile} onSelectFile={handleSelectFile} />

@@ -18,27 +18,27 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
   return (
     <div
       className="my-2 rounded-md"
-      style={{ backgroundColor: '#0d1117', border: '1px solid #30363d' }}
+      style={{ backgroundColor: 'var(--color-page-bg)', border: '1px solid var(--color-border-default)' }}
     >
       {comments.map((comment, i) => (
         <div
           key={comment.id}
           className="px-4 py-3"
-          style={i > 0 ? { borderTop: '1px solid #21262d' } : undefined}
+          style={i > 0 ? { borderTop: '1px solid var(--color-border-separator)' } : undefined}
         >
           <div className="flex items-start justify-between gap-2">
             <p
               className="whitespace-pre-wrap text-sm"
-              style={{ color: '#e6edf3' }}
+              style={{ color: 'var(--color-text-primary)' }}
             >
               {comment.body}
             </p>
             <button
               onClick={() => handleDelete(comment.id)}
               className="shrink-0 rounded p-1"
-              style={{ color: '#484f58' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#f85149')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#484f58')}
+              style={{ color: 'var(--color-text-muted)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
               title="Delete comment"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -46,16 +46,16 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
               </svg>
             </button>
           </div>
-          <div className="mt-1 text-xs" style={{ color: '#484f58' }}>
+          <div className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             {new Date(comment.createdAt).toLocaleTimeString()}
           </div>
         </div>
       ))}
-      <div className="px-4 py-2" style={{ borderTop: '1px solid #21262d' }}>
+      <div className="px-4 py-2" style={{ borderTop: '1px solid var(--color-border-separator)' }}>
         <button
           onClick={onReply}
           className="text-xs font-medium"
-          style={{ color: '#58a6ff' }}
+          style={{ color: 'var(--color-link)' }}
           onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
           onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
         >

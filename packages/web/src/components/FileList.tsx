@@ -2,10 +2,10 @@ import { useReview } from '../context/ReviewContext';
 import type { FileSummary } from '../types';
 
 const STATUS_COLORS: Record<FileSummary['status'], string> = {
-  added: '#3fb950',
-  modified: '#d29922',
-  deleted: '#f85149',
-  renamed: '#58a6ff',
+  added: 'var(--color-success)',
+  modified: 'var(--color-warning)',
+  deleted: 'var(--color-danger)',
+  renamed: 'var(--color-link)',
 };
 
 const STATUS_ICONS: Record<FileSummary['status'], string> = {
@@ -27,11 +27,11 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
   return (
     <aside
       className="w-72 shrink-0 overflow-y-auto"
-      style={{ backgroundColor: '#010409', borderRight: '1px solid #21262d' }}
+      style={{ backgroundColor: 'var(--color-deep-bg)', borderRight: '1px solid var(--color-border-separator)' }}
     >
       <div
         className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
-        style={{ color: '#8b949e', borderBottom: '1px solid #21262d' }}
+        style={{ color: 'var(--color-text-secondary)', borderBottom: '1px solid var(--color-border-separator)' }}
       >
         Files changed
       </div>
@@ -48,11 +48,11 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
                 onClick={() => onSelectFile(file.path)}
                 className="flex w-full items-center gap-2 px-4 py-1.5 text-left text-sm"
                 style={{
-                  backgroundColor: isActive ? '#161b22' : 'transparent',
-                  color: '#e6edf3',
+                  backgroundColor: isActive ? 'var(--color-surface-bg)' : 'transparent',
+                  color: 'var(--color-text-primary)',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = '#161b22';
+                  if (!isActive) e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)';
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
@@ -66,14 +66,14 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
                 </span>
                 <span
                   className="min-w-0 flex-1 truncate font-mono text-xs"
-                  style={{ color: '#e6edf3' }}
+                  style={{ color: 'var(--color-text-primary)' }}
                 >
                   {file.path}
                 </span>
                 {commentsOnFile > 0 && (
                   <span
                     className="shrink-0 rounded-full px-1.5 text-xs"
-                    style={{ backgroundColor: '#1f6feb', color: '#ffffff' }}
+                    style={{ backgroundColor: 'var(--color-info)', color: 'var(--color-text-on-emphasis)' }}
                   >
                     {commentsOnFile}
                   </span>

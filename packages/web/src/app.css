@@ -1,10 +1,163 @@
 @import "tailwindcss";
 @import "./styles/diff-overrides.css";
 
-/* GitHub dark mode base */
+/* ── Theme tokens ─────────────────────────────────────── */
+
+/* Dark mode defaults */
+:root {
+  /* Backgrounds */
+  --color-page-bg: #0d1117;
+  --color-deep-bg: #010409;
+  --color-surface-bg: #161b22;
+  --color-elevated-bg: #21262d;
+
+  /* Borders */
+  --color-border-default: #30363d;
+  --color-border-separator: #21262d;
+
+  /* Text */
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #484f58;
+  --color-text-on-emphasis: #ffffff;
+
+  /* Buttons — green */
+  --color-btn-green-bg: #238636;
+  --color-btn-green-hover: #2ea043;
+  --color-btn-border: rgba(240, 246, 252, 0.1);
+
+  /* Buttons — red */
+  --color-btn-red-bg: #da3633;
+  --color-btn-red-hover: #f85149;
+
+  /* Status */
+  --color-success: #3fb950;
+  --color-danger: #f85149;
+  --color-warning: #d29922;
+  --color-info: #1f6feb;
+  --color-link: #58a6ff;
+
+  /* Overlay */
+  --color-overlay-bg: rgba(1, 4, 9, 0.8);
+
+  /* Scrollbar */
+  --color-scrollbar-track: #010409;
+  --color-scrollbar-thumb: #30363d;
+  --color-scrollbar-thumb-hover: #484f58;
+}
+
+/* Auto-detect: system prefers light */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-page-bg: #ffffff;
+    --color-deep-bg: #f6f8fa;
+    --color-surface-bg: #f6f8fa;
+    --color-elevated-bg: #eaeef2;
+
+    --color-border-default: #d1d9e0;
+    --color-border-separator: #d1d9e0;
+
+    --color-text-primary: #1f2328;
+    --color-text-secondary: #656d76;
+    --color-text-muted: #818b98;
+    --color-text-on-emphasis: #ffffff;
+
+    --color-btn-green-bg: #1a7f37;
+    --color-btn-green-hover: #2da44e;
+    --color-btn-border: rgba(27, 31, 36, 0.15);
+
+    --color-btn-red-bg: #cf222e;
+    --color-btn-red-hover: #d1242f;
+
+    --color-success: #1a7f37;
+    --color-danger: #cf222e;
+    --color-warning: #9a6700;
+    --color-info: #0969da;
+    --color-link: #0969da;
+
+    --color-overlay-bg: rgba(27, 31, 36, 0.5);
+
+    --color-scrollbar-track: #f6f8fa;
+    --color-scrollbar-thumb: #d1d9e0;
+    --color-scrollbar-thumb-hover: #818b98;
+  }
+}
+
+/* Manual override: light */
+[data-theme="light"] {
+  --color-page-bg: #ffffff;
+  --color-deep-bg: #f6f8fa;
+  --color-surface-bg: #f6f8fa;
+  --color-elevated-bg: #eaeef2;
+
+  --color-border-default: #d1d9e0;
+  --color-border-separator: #d1d9e0;
+
+  --color-text-primary: #1f2328;
+  --color-text-secondary: #656d76;
+  --color-text-muted: #818b98;
+  --color-text-on-emphasis: #ffffff;
+
+  --color-btn-green-bg: #1a7f37;
+  --color-btn-green-hover: #2da44e;
+  --color-btn-border: rgba(27, 31, 36, 0.15);
+
+  --color-btn-red-bg: #cf222e;
+  --color-btn-red-hover: #d1242f;
+
+  --color-success: #1a7f37;
+  --color-danger: #cf222e;
+  --color-warning: #9a6700;
+  --color-info: #0969da;
+  --color-link: #0969da;
+
+  --color-overlay-bg: rgba(27, 31, 36, 0.5);
+
+  --color-scrollbar-track: #f6f8fa;
+  --color-scrollbar-thumb: #d1d9e0;
+  --color-scrollbar-thumb-hover: #818b98;
+}
+
+/* Manual override: dark (restores defaults over system light) */
+[data-theme="dark"] {
+  --color-page-bg: #0d1117;
+  --color-deep-bg: #010409;
+  --color-surface-bg: #161b22;
+  --color-elevated-bg: #21262d;
+
+  --color-border-default: #30363d;
+  --color-border-separator: #21262d;
+
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #484f58;
+  --color-text-on-emphasis: #ffffff;
+
+  --color-btn-green-bg: #238636;
+  --color-btn-green-hover: #2ea043;
+  --color-btn-border: rgba(240, 246, 252, 0.1);
+
+  --color-btn-red-bg: #da3633;
+  --color-btn-red-hover: #f85149;
+
+  --color-success: #3fb950;
+  --color-danger: #f85149;
+  --color-warning: #d29922;
+  --color-info: #1f6feb;
+  --color-link: #58a6ff;
+
+  --color-overlay-bg: rgba(1, 4, 9, 0.8);
+
+  --color-scrollbar-track: #010409;
+  --color-scrollbar-thumb: #30363d;
+  --color-scrollbar-thumb-hover: #484f58;
+}
+
+/* ── Base styles ──────────────────────────────────────── */
+
 body {
-  background-color: #0d1117;
-  color: #e6edf3;
+  background-color: var(--color-page-bg);
+  color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
@@ -15,14 +168,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #010409;
+  background: var(--color-scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #30363d;
+  background: var(--color-scrollbar-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #484f58;
+  background: var(--color-scrollbar-thumb-hover);
 }

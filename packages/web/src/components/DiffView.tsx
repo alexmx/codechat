@@ -39,18 +39,18 @@ export function DiffView({ activeFile }: DiffViewProps) {
   if (!state.review) return null;
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4" style={{ backgroundColor: '#0d1117' }}>
+    <div className="flex-1 overflow-y-auto px-6 py-4" style={{ backgroundColor: 'var(--color-page-bg)' }}>
       <div
         className="mb-4 inline-flex overflow-hidden rounded-md"
-        style={{ border: '1px solid #30363d' }}
+        style={{ border: '1px solid var(--color-border-default)' }}
       >
         <button
           onClick={() => setViewType('unified')}
           className="px-3 py-1 text-xs font-medium"
           style={{
-            backgroundColor: viewType === 'unified' ? '#21262d' : 'transparent',
-            color: viewType === 'unified' ? '#e6edf3' : '#8b949e',
-            borderRight: '1px solid #30363d',
+            backgroundColor: viewType === 'unified' ? 'var(--color-elevated-bg)' : 'transparent',
+            color: viewType === 'unified' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+            borderRight: '1px solid var(--color-border-default)',
           }}
         >
           Unified
@@ -59,8 +59,8 @@ export function DiffView({ activeFile }: DiffViewProps) {
           onClick={() => setViewType('split')}
           className="px-3 py-1 text-xs font-medium"
           style={{
-            backgroundColor: viewType === 'split' ? '#21262d' : 'transparent',
-            color: viewType === 'split' ? '#e6edf3' : '#8b949e',
+            backgroundColor: viewType === 'split' ? 'var(--color-elevated-bg)' : 'transparent',
+            color: viewType === 'split' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
           }}
         >
           Split
@@ -197,9 +197,9 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
       <div
         className="p-4 text-sm"
         style={{
-          backgroundColor: '#161b22',
-          color: '#484f58',
-          border: '1px solid #30363d',
+          backgroundColor: 'var(--color-surface-bg)',
+          color: 'var(--color-text-muted)',
+          border: '1px solid var(--color-border-default)',
           borderTop: 'none',
           borderBottomLeftRadius: 6,
           borderBottomRightRadius: 6,
@@ -214,7 +214,7 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
     <div
       className="overflow-x-auto"
       style={{
-        border: '1px solid #30363d',
+        border: '1px solid var(--color-border-default)',
         borderTop: 'none',
         borderBottomLeftRadius: 6,
         borderBottomRightRadius: 6,
