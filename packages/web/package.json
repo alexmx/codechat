@@ -15,6 +15,7 @@
     "refractor": "^5.0.0"
   },
   "devDependencies": {
+    "@codechat/cli": "workspace:*",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

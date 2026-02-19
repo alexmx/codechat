@@ -83,6 +83,11 @@ async function runReview(options: {
   console.log(JSON.stringify(result, null, 2));
 }
 
+process.on('SIGINT', () => {
+  process.stderr.write('\nReview cancelled.\n');
+  process.exit(130);
+});
+
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2),

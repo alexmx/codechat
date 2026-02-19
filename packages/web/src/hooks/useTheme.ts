@@ -57,5 +57,5 @@ export function useTheme() {
     });
   }, []);
 
-  return { theme: effectiveTheme, toggleTheme } as const;
+  return { theme: effectiveTheme, toggleTheme };
 }

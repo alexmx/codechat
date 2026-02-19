@@ -1,35 +1,30 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { ClientMessage, ServerMessage } from '../types';
 
-export function useWebSocket() {
+type Status = 'connecting' | 'connected' | 'disconnected';
+
+export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
   const wsRef = useRef<WebSocket | null>(null);
-  const [lastMessage, setLastMessage] = useState<ServerMessage | null>(null);
-  const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>(
-    'connecting',
-  );
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+
+  const [status, setStatus] = useState<Status>('connecting');
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`${protocol}//${window.location.host}`);
     wsRef.current = ws;
 
     ws.onopen = () => setStatus('connected');
     ws.onclose = () => setStatus('disconnected');
     ws.onerror = () => setStatus('disconnected');
-
     ws.onmessage = (event) => {
       try {
-        const msg = JSON.parse(event.data) as ServerMessage;
-        setLastMessage(msg);
-      } catch {
-        // ignore malformed messages
-      }
+        onMessageRef.current(JSON.parse(event.data) as ServerMessage);
+      } catch { /* ignore malformed */ }
     };
 
-    return () => {
-      ws.close();
-    };
+    return () => { ws.close(); };
   }, []);
 
   const send = useCallback((msg: ClientMessage) => {
@@ -38,5 +33,5 @@ export function useWebSocket() {
     }
   }, []);
 
-  return { send, lastMessage, status };
+  return { send, status };
 }

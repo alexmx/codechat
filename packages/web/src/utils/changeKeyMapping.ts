@@ -1,5 +1,4 @@
 import { getChangeKey } from 'react-diff-view';
-import type { Comment } from '../types';
 
 // We use `any` for change/hunk types since react-diff-view's internal
 // types don't perfectly align with their runtime structures.
@@ -27,17 +26,6 @@ export function buildChangeKeyMap(hunks: AnyHunk[]): Map<string, string> {
     }
   }
   return map;
-}
-
-/**
- * Get the changeKey for a Comment's (line, side) pair.
- */
-export function commentToChangeKey(
-  comment: Comment,
-  hunks: AnyHunk[],
-): string | null {
-  const map = buildChangeKeyMap(hunks);
-  return map.get(`${comment.side}:${comment.line}`) ?? null;
 }
 
 /**

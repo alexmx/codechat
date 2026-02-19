@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { ReviewProvider, useReview } from './context/ReviewContext';
-import { useTheme } from './hooks/useTheme';
 import { ReviewHeader } from './components/ReviewHeader';
 import { FileList } from './components/FileList';
 import { DiffView } from './components/DiffView';
@@ -10,7 +9,6 @@ import { SubmittedScreen } from './components/SubmittedScreen';
 function AppContent() {
   const { state } = useReview();
   const [activeFile, setActiveFile] = useState<string | null>(null);
-  useTheme(); // Ensures data-theme attribute stays in sync
 
   const handleSelectFile = useCallback((path: string) => {
     setActiveFile(path);

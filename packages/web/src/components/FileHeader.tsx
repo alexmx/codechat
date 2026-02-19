@@ -8,12 +8,10 @@ interface FileHeaderProps {
 export function FileHeader({ file, commentCount }: FileHeaderProps) {
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2"
+      className="flex items-center gap-3 rounded-t-md px-4 py-2"
       style={{
         backgroundColor: 'var(--color-surface-bg)',
         border: '1px solid var(--color-border-default)',
-        borderTopLeftRadius: 6,
-        borderTopRightRadius: 6,
       }}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--color-text-secondary)">

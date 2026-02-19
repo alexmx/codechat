@@ -3,16 +3,42 @@ import { join, extname } from 'node:path';
 import { readFile, stat } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer, type WebSocket } from 'ws';
+import { z } from 'zod';
 import type {
   Session,
   Review,
   Comment,
   ReviewResult,
   ReviewServer,
-  ClientMessage,
   ServerMessage,
 } from './types.js';
 import { saveSession } from './session.js';
+
+const AddCommentSchema = z.object({
+  type: z.literal('add_comment'),
+  data: z.object({
+    filePath: z.string(),
+    line: z.number().int(),
+    side: z.enum(['old', 'new']),
+    body: z.string().min(1),
+  }),
+});
+
+const DeleteCommentSchema = z.object({
+  type: z.literal('delete_comment'),
+  data: z.object({ id: z.string() }),
+});
+
+const SubmitReviewSchema = z.object({
+  type: z.literal('submit_review'),
+  data: z.object({ status: z.enum(['approved', 'changes_requested']) }),
+});
+
+const ClientMessageSchema = z.discriminatedUnion('type', [
+  AddCommentSchema,
+  DeleteCommentSchema,
+  SubmitReviewSchema,
+]);
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html',
@@ -103,19 +129,27 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
       send(ws, { type: 'init', data: review });
 
       ws.on('message', async (raw: Buffer) => {
-        let msg: ClientMessage;
+        let json: unknown;
         try {
-          msg = JSON.parse(raw.toString());
+          json = JSON.parse(raw.toString());
         } catch {
           return;
         }
 
+        const parsed = ClientMessageSchema.safeParse(json);
+        if (!parsed.success) return;
+        const msg = parsed.data;
+
         switch (msg.type) {
           case 'add_comment': {
+            const { filePath, line, side, body } = msg.data;
             const comment: Comment = {
               id: randomUUID(),
+              filePath,
+              line,
+              side,
+              body,
               createdAt: new Date().toISOString(),
-              ...msg.data,
             };
             review.comments.push(comment);
             await saveSession(session);
@@ -124,21 +158,23 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
           }
 
           case 'delete_comment': {
-            review.comments = review.comments.filter((c) => c.id !== msg.data.id);
+            const { id } = msg.data;
+            review.comments = review.comments.filter((c) => c.id !== id);
             await saveSession(session);
-            broadcast(wss, { type: 'comment_deleted', data: msg.data });
+            broadcast(wss, { type: 'comment_deleted', data: { id } });
             break;
           }
 
           case 'submit_review': {
-            review.status = msg.data.status;
+            const { status } = msg.data;
+            review.status = status;
             await saveSession(session);
             broadcast(wss, { type: 'review_complete' });
 
             const result: ReviewResult = {
               sessionId: session.id,
               reviewId: review.id,
-              status: msg.data.status,
+              status,
               comments: review.comments,
             };
 

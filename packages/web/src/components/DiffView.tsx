@@ -4,6 +4,13 @@ import { refractor } from 'refractor';
 import tsx from 'refractor/tsx';
 import jsx from 'refractor/jsx';
 import 'react-diff-view/style/index.css';
+import { useReview } from '../context/ReviewContext';
+import { FileHeader } from './FileHeader';
+import { CommentWidget } from './CommentWidget';
+import { CommentForm } from './CommentForm';
+import { buildChangeKeyMap, changeToLineInfo } from '../utils/changeKeyMapping';
+import { detectLanguage } from '../utils/languageDetect';
+import type { Comment } from '../types';
 
 // Register languages not in refractor's common bundle
 refractor.register(tsx);
@@ -15,13 +22,6 @@ const refractorAdapter = {
   highlight: (code: string, language: string) => refractor.highlight(code, language).children,
   registered: (lang: string) => refractor.registered(lang),
 };
-import { useReview } from '../context/ReviewContext';
-import { FileHeader } from './FileHeader';
-import { CommentWidget } from './CommentWidget';
-import { CommentForm } from './CommentForm';
-import { commentToChangeKey, changeToLineInfo } from '../utils/changeKeyMapping';
-import { detectLanguage } from '../utils/languageDetect';
-import type { Comment } from '../types';
 
 interface DiffViewProps {
   activeFile: string | null;
@@ -126,12 +126,14 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
     }
   }, [file.hunks, filePath]);
 
+  const changeKeyMap = useMemo(() => buildChangeKeyMap(file.hunks), [file.hunks]);
+
   const widgets = useMemo(() => {
     const w: Record<string, ReactNode> = {};
 
     const commentsByKey = new Map<string, Comment[]>();
     for (const comment of comments) {
-      const changeKey = commentToChangeKey(comment, file.hunks);
+      const changeKey = changeKeyMap.get(`${comment.side}:${comment.line}`) ?? null;
       if (changeKey) {
         const existing = commentsByKey.get(changeKey) ?? [];
         existing.push(comment);
@@ -171,7 +173,7 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
     }
 
     return w;
-  }, [comments, commentingOnKey, commentingLineInfo, filePath, file.hunks]);
+  }, [comments, commentingOnKey, commentingLineInfo, filePath, changeKeyMap]);
 
   const handleGutterClick = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -195,14 +197,12 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
   if (file.hunks.length === 0) {
     return (
       <div
-        className="p-4 text-sm"
+        className="rounded-b-md p-4 text-sm"
         style={{
           backgroundColor: 'var(--color-surface-bg)',
           color: 'var(--color-text-muted)',
           border: '1px solid var(--color-border-default)',
           borderTop: 'none',
-          borderBottomLeftRadius: 6,
-          borderBottomRightRadius: 6,
         }}
       >
         No changes to display
@@ -212,12 +212,10 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
 
   return (
     <div
-      className="overflow-x-auto"
+      className="overflow-x-auto rounded-b-md"
       style={{
         border: '1px solid var(--color-border-default)',
         borderTop: 'none',
-        borderBottomLeftRadius: 6,
-        borderBottomRightRadius: 6,
       }}
     >
       <Diff

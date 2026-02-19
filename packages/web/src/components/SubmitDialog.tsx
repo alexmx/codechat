@@ -66,7 +66,7 @@ export function SubmitDialog({ onClose }: SubmitDialogProps) {
           <button
             onClick={onClose}
             className="w-full rounded-md px-4 py-1.5 text-sm font-medium"
-            style={{ color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-default)', backgroundColor: 'transparent' }}
+            style={{ color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-default)' }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)')}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >

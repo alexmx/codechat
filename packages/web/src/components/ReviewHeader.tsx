@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useReview } from '../context/ReviewContext';
 import { useTheme } from '../hooks/useTheme';
 import { SubmitDialog } from './SubmitDialog';
@@ -11,8 +11,10 @@ export function ReviewHeader() {
   if (!state.review) return null;
 
   const { review } = state;
-  const totalAdditions = review.files.reduce((sum, f) => sum + f.additions, 0);
-  const totalDeletions = review.files.reduce((sum, f) => sum + f.deletions, 0);
+  const { totalAdditions, totalDeletions } = useMemo(() => ({
+    totalAdditions: review.files.reduce((sum, f) => sum + f.additions, 0),
+    totalDeletions: review.files.reduce((sum, f) => sum + f.deletions, 0),
+  }), [review.files]);
 
   return (
     <>
@@ -46,7 +48,7 @@ export function ReviewHeader() {
           <button
             onClick={toggleTheme}
             className="rounded p-1.5"
-            style={{ color: 'var(--color-text-secondary)', backgroundColor: 'transparent' }}
+            style={{ color: 'var(--color-text-secondary)' }}
             onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-primary)')}
             onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}

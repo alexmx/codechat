@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react';
 import type { Review, Comment, ClientMessage, ServerMessage } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
 
@@ -54,7 +54,6 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
 
 interface ReviewContextValue {
   state: ReviewState;
-  dispatch: React.Dispatch<ReviewAction>;
   send: (msg: ClientMessage) => void;
 }
 
@@ -62,15 +61,8 @@ const ReviewContext = createContext<ReviewContextValue | null>(null);
 
 export function ReviewProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reviewReducer, initialState);
-  const { send, lastMessage, status } = useWebSocket();
 
-  useEffect(() => {
-    dispatch({ type: 'CONNECTION_STATUS', connected: status === 'connected' });
-  }, [status]);
-
-  useEffect(() => {
-    if (!lastMessage) return;
-    const msg: ServerMessage = lastMessage;
+  const handleMessage = useCallback((msg: ServerMessage) => {
     switch (msg.type) {
       case 'init':
         dispatch({ type: 'INIT', review: msg.data });
@@ -88,10 +80,16 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         setTimeout(() => window.close(), 500);
         break;
     }
-  }, [lastMessage]);
+  }, []);
+
+  const { send, status } = useWebSocket(handleMessage);
+
+  useEffect(() => {
+    dispatch({ type: 'CONNECTION_STATUS', connected: status === 'connected' });
+  }, [status]);
 
   return (
-    <ReviewContext.Provider value={{ state, dispatch, send }}>
+    <ReviewContext.Provider value={{ state, send }}>
       {children}
     </ReviewContext.Provider>
   );
