@@ -1,11 +1,26 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
-import { parseDiff, Diff, Hunk, getChangeKey } from 'react-diff-view';
+import { parseDiff, Diff, Hunk, getChangeKey, tokenize, markEdits } from 'react-diff-view';
+import { refractor } from 'refractor';
+import tsx from 'refractor/tsx';
+import jsx from 'refractor/jsx';
 import 'react-diff-view/style/index.css';
+
+// Register languages not in refractor's common bundle
+refractor.register(tsx);
+refractor.register(jsx);
+
+// Adapter: refractor v5 returns { type: 'root', children: [...] } from highlight(),
+// but react-diff-view v3 expects highlight() to return just the children array.
+const refractorAdapter = {
+  highlight: (code: string, language: string) => refractor.highlight(code, language).children,
+  registered: (lang: string) => refractor.registered(lang),
+};
 import { useReview } from '../context/ReviewContext';
 import { FileHeader } from './FileHeader';
 import { CommentWidget } from './CommentWidget';
 import { CommentForm } from './CommentForm';
 import { commentToChangeKey, changeToLineInfo } from '../utils/changeKeyMapping';
+import { detectLanguage } from '../utils/languageDetect';
 import type { Comment } from '../types';
 
 interface DiffViewProps {
@@ -94,6 +109,22 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
     line: number;
     side: 'old' | 'new';
   } | null>(null);
+
+  const tokens = useMemo(() => {
+    const language = detectLanguage(filePath);
+    if (!language || file.hunks.length === 0) return undefined;
+    if (!refractorAdapter.registered(language)) return undefined;
+    try {
+      return tokenize(file.hunks, {
+        highlight: true,
+        refractor: refractorAdapter,
+        language,
+        enhancers: [markEdits(file.hunks)],
+      });
+    } catch {
+      return undefined;
+    }
+  }, [file.hunks, filePath]);
 
   const widgets = useMemo(() => {
     const w: Record<string, ReactNode> = {};
@@ -194,6 +225,7 @@ function FileDiffSection({ file, filePath, viewType, comments }: FileDiffSection
         diffType={file.type}
         hunks={file.hunks}
         widgets={widgets}
+        tokens={tokens}
         gutterEvents={gutterEvents}
       >
         {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}

@@ -101,3 +101,83 @@
   color: #484f58;
   padding: 4px 10px;
 }
+
+/* ── Syntax highlighting tokens (GitHub dark mode) ────────────── */
+.diff-code .token.comment,
+.diff-code .token.prolog,
+.diff-code .token.doctype,
+.diff-code .token.cdata {
+  color: #8b949e;
+}
+
+.diff-code .token.punctuation {
+  color: #e6edf3;
+}
+
+.diff-code .token.namespace {
+  opacity: 0.7;
+}
+
+.diff-code .token.property,
+.diff-code .token.tag,
+.diff-code .token.boolean,
+.diff-code .token.number,
+.diff-code .token.constant,
+.diff-code .token.symbol {
+  color: #79c0ff;
+}
+
+.diff-code .token.selector,
+.diff-code .token.attr-name,
+.diff-code .token.string,
+.diff-code .token.char,
+.diff-code .token.builtin {
+  color: #a5d6ff;
+}
+
+.diff-code .token.operator,
+.diff-code .token.entity,
+.diff-code .token.url,
+.diff-code .token.variable {
+  color: #79c0ff;
+}
+
+.diff-code .token.atrule,
+.diff-code .token.attr-value,
+.diff-code .token.function,
+.diff-code .token.class-name {
+  color: #d2a8ff;
+}
+
+.diff-code .token.keyword {
+  color: #ff7b72;
+}
+
+.diff-code .token.regex,
+.diff-code .token.important {
+  color: #ffa657;
+}
+
+.diff-code .token.important,
+.diff-code .token.bold {
+  font-weight: bold;
+}
+
+.diff-code .token.italic {
+  font-style: italic;
+}
+
+.diff-code .token.deleted {
+  color: #ffa198;
+}
+
+.diff-code .token.inserted {
+  color: #7ee787;
+}
+
+/* markEdits enhancer — character-level edit highlights */
+.diff-code-edit .diff-code-edit-marker {
+  background-color: rgba(210, 153, 34, 0.2);
+  border-radius: 2px;
+  padding: 1px 0;
+}
