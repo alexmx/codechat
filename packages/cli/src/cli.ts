@@ -1,81 +1,82 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import { isGitRepo, getRepoRoot, getDiff, parseFileSummaries } from './git.js';
-import { resolveSession } from './session.js';
-import { startReviewServer } from './server.js';
-import { getWebDistPath } from './paths.js';
-import open from 'open';
+import { executeReview, getSessionById, WorkflowError } from './workflow.js';
 
 function printUsage(): void {
   console.error(`
-Usage: codechat review [options]
+Usage: codechat <command> [options]
 
-Start an interactive code review for uncommitted changes.
+Commands:
+  review        Start an interactive code review (default)
+  get-session   Retrieve a session by ID
 
-Options:
-  -s, --session-id <id>   Reuse an existing session
-  -m, --message <text>    Description of what changed (shown in review UI)
-  -p, --port <number>     Use a specific port (default: random)
-  -t, --timeout <minutes> Session timeout in minutes (default: 30)
-  --no-open               Don't open the browser automatically
-  -h, --help              Show this help
+Review options:
+  -s, --session-id <id>     Reuse an existing session
+  -m, --message <text>      Description of what changed
+  -r, --replies <json|->    JSON array of replies (use - for stdin)
+  --skip-review             Return result without opening browser
+  -p, --port <number>       Use a specific port (default: random)
+  -t, --timeout <minutes>   Session timeout in minutes (default: 30)
+  --no-open                 Don't open the browser automatically
+  -h, --help                Show this help
 `);
+}
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf-8');
 }
 
 async function runReview(options: {
   'session-id'?: string;
   message?: string;
+  replies?: string;
+  'skip-review'?: boolean;
   port?: string;
   timeout?: string;
   'no-open'?: boolean;
 }): Promise<void> {
-  const cwd = process.cwd();
-
-  if (!(await isGitRepo(cwd))) {
-    console.error('Error: Not a git repository.');
-    process.exit(1);
+  let replies;
+  if (options.replies) {
+    const raw = options.replies === '-' ? await readStdin() : options.replies;
+    try {
+      replies = JSON.parse(raw);
+    } catch {
+      console.error('Error: --replies must be valid JSON.');
+      process.exit(1);
+    }
   }
 
-  const repoPath = await getRepoRoot(cwd);
-
-  const diff = await getDiff(repoPath);
-  if (!diff.trim()) {
-    console.error('No uncommitted changes found.');
-    process.exit(0);
-  }
-
-  const files = parseFileSummaries(diff);
-
-  const session = await resolveSession(repoPath, diff, files, {
+  const outcome = await executeReview({
+    repoPath: process.cwd(),
     sessionId: options['session-id'],
     message: options.message,
+    replies,
+    skipReview: options['skip-review'],
+    port: options.port ? parseInt(options.port, 10) : undefined,
+    timeout: options.timeout ? parseInt(options.timeout, 10) * 60_000 : undefined,
+    openBrowser: !options['no-open'] && !options['skip-review'],
   });
 
-  const webDistPath = await getWebDistPath();
-  const port = options.port ? parseInt(options.port, 10) : 0;
-
-  console.error('Starting CodeChat review server...');
-
-  const timeout = options.timeout ? parseInt(options.timeout, 10) * 60 * 1000 : undefined;
-
-  const server = await startReviewServer({
-    session,
-    webDistPath,
-    port,
-    timeout,
-  });
-
-  console.error(`Review server running at ${server.url}`);
-  console.error(`Session: ${session.id}`);
-  console.error(`Reviewing ${files.length} file(s)\n`);
-
-  if (!options['no-open']) {
-    await open(server.url);
+  switch (outcome.kind) {
+    case 'empty_diff':
+      console.error('No uncommitted changes found.');
+      process.exit(0);
+      break;
+    case 'skipped':
+    case 'reviewed':
+      console.log(JSON.stringify(outcome.result, null, 2));
+      break;
   }
+}
 
-  const result = await server.result;
-  console.log(JSON.stringify(result, null, 2));
+async function runGetSession(sessionId: string): Promise<void> {
+  const session = await getSessionById(sessionId);
+  console.log(JSON.stringify(session, null, 2));
 }
 
 process.on('SIGINT', () => {
@@ -89,6 +90,8 @@ async function main(): Promise<void> {
     options: {
       'session-id': { type: 'string', short: 's' },
       message: { type: 'string', short: 'm' },
+      replies: { type: 'string', short: 'r' },
+      'skip-review': { type: 'boolean' },
       port: { type: 'string', short: 'p' },
       timeout: { type: 'string', short: 't' },
       'no-open': { type: 'boolean' },
@@ -106,6 +109,13 @@ async function main(): Promise<void> {
 
   if (command === 'review') {
     await runReview(values);
+  } else if (command === 'get-session') {
+    const sessionId = positionals[1] || values['session-id'];
+    if (!sessionId) {
+      console.error('Usage: codechat get-session <session-id>');
+      process.exit(1);
+    }
+    await runGetSession(sessionId);
   } else {
     console.error(`Unknown command: ${command}`);
     process.exit(1);
@@ -113,6 +123,10 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
+  if (err instanceof WorkflowError) {
+    console.error(`Error: ${err.message}`);
+    process.exit(1);
+  }
   console.error(err.message);
   process.exit(1);
 });

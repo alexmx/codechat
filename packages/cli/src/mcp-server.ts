@@ -3,12 +3,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { isGitRepo, getRepoRoot, getDiff, parseFileSummaries } from './git.js';
-import { resolveSession, loadSession, saveSession } from './session.js';
-import { startReviewServer } from './server.js';
-import { getWebDistPath } from './paths.js';
-import type { ReviewResult } from './types.js';
-import open from 'open';
+import { executeReview, getSessionById, WorkflowError } from './workflow.js';
 
 const server = new McpServer({
   name: 'codechat',
@@ -41,64 +36,35 @@ The session persists automatically by repository path — you do not need to pas
       resolved: z.boolean().optional().describe('Mark as resolved (default: true). Set to false to ask the user a follow-up question without resolving.'),
     })).optional().describe('Address comments from the previous round. Each reply is shown to the user alongside their original comment.'),
     skipReview: z.boolean().optional().describe('When true, return the result immediately without opening the browser. Only set this when you are submitting replies as part of the review loop — never when the user asks to review or see their changes.'),
+    port: z.number().int().positive().optional().describe('Specific port for the review server (default: random available port)'),
+    timeout: z.number().int().positive().optional().describe('Session timeout in minutes (default: 30). The review auto-submits when this expires.'),
   },
-  async ({ repoPath, sessionId, message, replies, skipReview }) => {
-    if (!(await isGitRepo(repoPath))) {
-      return {
-        content: [{ type: 'text' as const, text: 'Error: Not a git repository.' }],
-        isError: true,
-      };
-    }
-
-    const canonicalPath = await getRepoRoot(repoPath);
-    const diff = await getDiff(canonicalPath);
-
-    if (!diff.trim()) {
-      return {
-        content: [{ type: 'text' as const, text: 'No uncommitted changes found.' }],
-      };
-    }
-
-    const files = parseFileSummaries(diff);
-
-    let session;
+  async ({ repoPath, sessionId, message, replies, skipReview, port, timeout }) => {
     try {
-      session = await resolveSession(canonicalPath, diff, files, { sessionId, message, replies });
+      const outcome = await executeReview({
+        repoPath,
+        sessionId,
+        message,
+        replies,
+        skipReview,
+        port,
+        timeout: timeout ? timeout * 60_000 : undefined,
+        openBrowser: !skipReview,
+      });
+
+      if (outcome.kind === 'empty_diff') {
+        return { content: [{ type: 'text' as const, text: 'No uncommitted changes found.' }] };
+      }
+
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(outcome.result, null, 2) }],
+      };
     } catch (err) {
-      return {
-        content: [{ type: 'text' as const, text: `Session error: ${(err as Error).message}` }],
-        isError: true,
-      };
+      if (err instanceof WorkflowError) {
+        return { content: [{ type: 'text' as const, text: err.message }], isError: true };
+      }
+      throw err;
     }
-
-    // If the agent explicitly opted into skipping the browser, return the result
-    // immediately — the agent is done submitting replies and doesn't need the UI.
-    if (skipReview) {
-      const pendingComments = session.comments.filter((c) => !c.resolved);
-      session.status = pendingComments.length > 0 ? 'changes_requested' : 'approved';
-      await saveSession(session);
-      const result: ReviewResult = {
-        sessionId: session.id,
-        status: session.status,
-        comments: session.comments,
-      };
-      return {
-        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    const webDistPath = await getWebDistPath();
-    const reviewServer = await startReviewServer({ session, webDistPath });
-
-    process.stderr.write(`CodeChat review: ${reviewServer.url}\n`);
-
-    await open(reviewServer.url);
-
-    const result = await reviewServer.result;
-
-    return {
-      content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-    };
   },
 );
 
@@ -110,15 +76,15 @@ server.tool(
   },
   async ({ sessionId }) => {
     try {
-      const session = await loadSession(sessionId);
+      const session = await getSessionById(sessionId);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(session, null, 2) }],
       };
-    } catch {
-      return {
-        content: [{ type: 'text' as const, text: `Session not found: ${sessionId}` }],
-        isError: true,
-      };
+    } catch (err) {
+      if (err instanceof WorkflowError) {
+        return { content: [{ type: 'text' as const, text: err.message }], isError: true };
+      }
+      throw err;
     }
   },
 );
