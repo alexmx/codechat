@@ -9,19 +9,27 @@ interface CommentWidgetProps {
 
 export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
   const { send } = useReview();
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [manualToggle, setManualToggle] = useState<Set<string>>(new Set());
 
   function handleDelete(id: string) {
     send({ type: 'delete_comment', data: { id } });
   }
 
-  function toggleExpanded(id: string) {
-    setExpanded((prev) => {
+  function toggleCollapse(id: string) {
+    setManualToggle((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  }
+
+  function isCollapsed(comment: Comment): boolean {
+    if (!comment.resolved) return false;
+    // Resolved + has reply → expanded by default (toggle to collapse)
+    if (comment.agentReply) return manualToggle.has(comment.id);
+    // Resolved + no reply → collapsed by default (toggle to expand)
+    return !manualToggle.has(comment.id);
   }
 
   if (comments.length === 0) return null;
@@ -36,9 +44,9 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
           key={comment.id}
           style={i > 0 ? { borderTop: '1px solid var(--color-border-separator)' } : {}}
         >
-          {comment.resolved && !expanded.has(comment.id) ? (
+          {isCollapsed(comment) ? (
             <button
-              onClick={() => toggleExpanded(comment.id)}
+              onClick={() => toggleCollapse(comment.id)}
               className="flex w-full items-center gap-2 px-4 py-1.5 text-left"
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -66,7 +74,7 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
             <div className="px-4 py-3">
               {comment.resolved && (
                 <button
-                  onClick={() => toggleExpanded(comment.id)}
+                  onClick={() => toggleCollapse(comment.id)}
                   className="mb-1 flex items-center gap-1"
                 >
                   <svg
@@ -82,6 +90,14 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
                     Resolved
                   </span>
                 </button>
+              )}
+              {!comment.resolved && comment.agentReply && (
+                <span
+                  className="mb-1 inline-block rounded px-1.5 py-0.5 text-xs font-medium"
+                  style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-info)' }}
+                >
+                  Replied
+                </span>
               )}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
@@ -100,7 +116,7 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
                     {comment.body}
                   </p>
                 </div>
-                {!comment.resolved && (
+                {!comment.resolved && !comment.agentReply && (
                   <button
                     onClick={() => handleDelete(comment.id)}
                     className="shrink-0 rounded p-1"

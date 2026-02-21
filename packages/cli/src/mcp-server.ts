@@ -13,6 +13,7 @@ import {
 } from './session.js';
 import { startReviewServer } from './server.js';
 import { getWebDistPath } from './paths.js';
+import type { ReviewResult } from './types.js';
 import open from 'open';
 
 const server = new McpServer({
@@ -22,17 +23,32 @@ const server = new McpServer({
 
 server.tool(
   'codechat_review',
-  'Start an interactive code review for uncommitted changes. Opens a browser UI where the user can leave inline comments and approve or request changes. Blocks until the user submits their review.',
+  `Request a code review for uncommitted changes. Returns a ReviewResult JSON with { sessionId, status, comments }.
+
+Workflow:
+1. First call: Opens a browser UI for the user to review the diff and leave inline comments. Blocks until the user submits.
+2. When the result comes back, ALWAYS summarize NEW (unresolved) comments to the user before doing anything else:
+   - List each unresolved comment with its file, line number, and what the reviewer said.
+   - State what you plan to do for each one (fix it, ask a question, etc.).
+   - Skip already-resolved comments — no need to repeat them.
+3. Make the fixes, then call this tool again with replies addressing each comment and skipReview set to true.
+4. When replying, set resolved: true (default) for addressed comments, or resolved: false to ask the user a clarifying question.
+5. If skipReview is true, the tool returns immediately without opening the browser — the review loop is complete.
+6. If the user asks to review or see the changes, call without skipReview so the browser opens.
+
+The session persists automatically by repository path — you do not need to pass sessionId on subsequent calls.`,
   {
     repoPath: z.string().describe('Absolute path to the git repository'),
-    sessionId: z.string().optional().describe('Reuse an existing session ID'),
-    message: z.string().optional().describe('Description of what changed, shown to the reviewer'),
+    sessionId: z.string().optional().describe('Explicit session ID override. Usually not needed — the session is auto-discovered by repoPath.'),
+    message: z.string().optional().describe('Short summary of what you changed since the last round, shown to the reviewer in the UI header'),
     replies: z.array(z.object({
-      commentId: z.string().describe('The comment ID to reply to'),
-      body: z.string().describe('The reply text'),
-    })).optional().describe('Replies to comments from the previous review round'),
+      commentId: z.string().describe('The comment ID being addressed'),
+      body: z.string().describe('Your reply explaining what you did or asking for clarification'),
+      resolved: z.boolean().optional().describe('Mark as resolved (default: true). Set to false to ask the user a follow-up question without resolving.'),
+    })).optional().describe('Address comments from the previous round. Each reply is shown to the user alongside their original comment.'),
+    skipReview: z.boolean().optional().describe('When true, return the result immediately without opening the browser. Only set this when you are submitting replies as part of the review loop — never when the user asks to review or see their changes.'),
   },
-  async ({ repoPath, sessionId, message, replies }) => {
+  async ({ repoPath, sessionId, message, replies, skipReview }) => {
     if (!(await isGitRepo(repoPath))) {
       return {
         content: [{ type: 'text' as const, text: 'Error: Not a git repository.' }],
@@ -74,6 +90,22 @@ server.tool(
       }
     }
 
+    // If the agent explicitly opted into skipping the browser, return the result
+    // immediately — the agent is done submitting replies and doesn't need the UI.
+    if (skipReview) {
+      const pendingComments = session.comments.filter((c) => !c.resolved);
+      session.status = pendingComments.length > 0 ? 'changes_requested' : 'approved';
+      await saveSession(session);
+      const result: ReviewResult = {
+        sessionId: session.id,
+        status: session.status,
+        comments: session.comments,
+      };
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      };
+    }
+
     const webDistPath = await getWebDistPath();
     const reviewServer = await startReviewServer({ session, webDistPath });
 
@@ -91,9 +123,9 @@ server.tool(
 
 server.tool(
   'codechat_get_session',
-  'Retrieve the current state of a code review session, including all comments.',
+  'Retrieve the current state of a review session without starting a new review round. Useful for re-reading comments or checking session status. Returns the full session JSON including all comments and their resolved/reply state.',
   {
-    sessionId: z.string().describe('The session ID to retrieve'),
+    sessionId: z.string().describe('The session ID (returned as sessionId in the ReviewResult from codechat_review)'),
   },
   async ({ sessionId }) => {
     try {
