@@ -1,10 +1,35 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Component, type ReactNode } from 'react';
 import { ReviewProvider, useReview } from './context/ReviewContext';
 import { ReviewHeader } from './components/ReviewHeader';
 import { FileList } from './components/FileList';
 import { DiffView } from './components/DiffView';
 import { LoadingScreen } from './components/LoadingScreen';
 import { SubmittedScreen } from './components/SubmittedScreen';
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex h-screen items-center justify-center" style={{ backgroundColor: 'var(--color-page-bg)', color: 'var(--color-text-primary)' }}>
+          <div className="max-w-md text-center">
+            <h1 className="mb-2 text-lg font-semibold">Something went wrong</h1>
+            <p className="mb-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>{this.state.error.message}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-md px-4 py-2 text-sm font-medium"
+              style={{ backgroundColor: 'var(--color-btn-green-bg)', color: 'var(--color-text-on-emphasis)', border: '1px solid var(--color-btn-border)' }}
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AppContent() {
   const { state } = useReview();
@@ -32,8 +57,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ReviewProvider>
-      <AppContent />
-    </ReviewProvider>
+    <ErrorBoundary>
+      <ReviewProvider>
+        <AppContent />
+      </ReviewProvider>
+    </ErrorBoundary>
   );
 }

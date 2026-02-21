@@ -23,6 +23,7 @@ Options:
   -s, --session-id <id>   Reuse an existing session
   -m, --message <text>    Description of what changed (shown in review UI)
   -p, --port <number>     Use a specific port (default: random)
+  -t, --timeout <minutes> Session timeout in minutes (default: 30)
   --no-open               Don't open the browser automatically
   -h, --help              Show this help
 `);
@@ -32,6 +33,7 @@ async function runReview(options: {
   'session-id'?: string;
   message?: string;
   port?: string;
+  timeout?: string;
   'no-open'?: boolean;
 }): Promise<void> {
   const cwd = process.cwd();
@@ -72,10 +74,13 @@ async function runReview(options: {
 
   console.error('Starting CodeChat review server...');
 
+  const timeout = options.timeout ? parseInt(options.timeout, 10) * 60 * 1000 : undefined;
+
   const server = await startReviewServer({
     session,
     webDistPath,
     port,
+    timeout,
   });
 
   console.error(`Review server running at ${server.url}`);
@@ -102,6 +107,7 @@ async function main(): Promise<void> {
       'session-id': { type: 'string', short: 's' },
       message: { type: 'string', short: 'm' },
       port: { type: 'string', short: 'p' },
+      timeout: { type: 'string', short: 't' },
       'no-open': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
     },

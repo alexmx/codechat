@@ -51,6 +51,10 @@ export function SubmitDialog({ onClose }: SubmitDialogProps) {
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); }
+              if (e.key === 'Escape') onClose();
+            }}
             placeholder="General comment (optional)"
             rows={3}
             className="mb-3 w-full resize-y rounded-md px-3 py-2 text-sm"

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useReview } from '../context/ReviewContext';
 import type { FileSummary } from '../types';
 
@@ -99,6 +99,20 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
     return buildTree(state.session.files);
   }, [state.session?.files]);
 
+  const asideRef = useRef<HTMLElement>(null);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    const container = asideRef.current;
+    if (!container) return;
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('ul button'));
+    const idx = buttons.indexOf(e.target as HTMLButtonElement);
+    if (idx === -1) return;
+    e.preventDefault();
+    const next = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
+    buttons[next]?.focus();
+  }, []);
+
   if (!state.session) return null;
 
   const commentsByFile = new Map<string, number>();
@@ -108,6 +122,8 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
 
   return (
     <aside
+      ref={asideRef}
+      onKeyDown={handleKeyDown}
       className="w-72 shrink-0 overflow-y-auto"
       style={{ backgroundColor: 'var(--color-deep-bg)', borderRight: '1px solid var(--color-border-separator)' }}
     >
@@ -280,11 +296,17 @@ function TreeNodeRow({
     <li>
       <button
         onClick={() => toggleDir(node.fullPath)}
-        className="flex w-full items-center gap-1.5 py-1 text-left text-xs"
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowRight' && isCollapsed) { e.preventDefault(); toggleDir(node.fullPath); }
+          if (e.key === 'ArrowLeft' && !isCollapsed) { e.preventDefault(); toggleDir(node.fullPath); }
+        }}
+        className="flex w-full items-center gap-1.5 py-1 text-left text-xs focus:outline-none"
         style={{
           paddingLeft: `${depth * 12 + 16}px`,
           color: 'var(--color-text-secondary)',
         }}
+        onFocus={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)')}
+        onBlur={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)')}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
@@ -339,12 +361,18 @@ function FileRow({ file, label, depth, commentCount, isActive, onSelect }: FileR
     <li>
       <button
         onClick={() => onSelect(file.path)}
-        className="flex w-full items-center gap-2 py-1.5 text-left text-sm"
+        className="flex w-full items-center gap-2 py-1.5 text-left text-sm focus:outline-none"
         style={{
           paddingLeft: `${depth * 12 + 16}px`,
           paddingRight: '16px',
           backgroundColor: isActive ? 'var(--color-surface-bg)' : 'transparent',
           color: 'var(--color-text-primary)',
+        }}
+        onFocus={(e) => {
+          if (!isActive) e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)';
+        }}
+        onBlur={(e) => {
+          if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
         }}
         onMouseEnter={(e) => {
           if (!isActive) e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)';

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useReview } from '../context/ReviewContext';
 import { useTheme } from '../hooks/useTheme';
 import { SubmitDialog } from './SubmitDialog';
@@ -7,6 +7,18 @@ export function ReviewHeader() {
   const { state } = useReview();
   const { theme, toggleTheme } = useTheme();
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showDiffToast, setShowDiffToast] = useState(false);
+  const prevDiffRef = useRef<string | undefined>();
+
+  useEffect(() => {
+    const currentDiff = state.session?.diff;
+    if (prevDiffRef.current !== undefined && currentDiff !== prevDiffRef.current) {
+      setShowDiffToast(true);
+      const timer = setTimeout(() => setShowDiffToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    prevDiffRef.current = currentDiff;
+  }, [state.session?.diff]);
 
   if (!state.session) return null;
 
@@ -45,8 +57,25 @@ export function ReviewHeader() {
               {pendingCount} comment{pendingCount !== 1 ? 's' : ''}
             </span>
           )}
+          {showDiffToast && (
+            <span
+              className="rounded-full px-2 py-0.5 text-xs font-medium"
+              style={{ backgroundColor: 'var(--color-success)', color: 'var(--color-text-on-emphasis)' }}
+            >
+              Diff updated
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
+          {!state.isConnected && !state.isSubmitted && (
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-warning)' }}>
+              <span
+                className="animate-pulse inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: 'var(--color-warning)' }}
+              />
+              Reconnecting...
+            </span>
+          )}
           <button
             onClick={toggleTheme}
             className="rounded p-1.5"

@@ -260,7 +260,7 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
       try {
         fileWatcher = watch(session.repoPath, { recursive: true }, (_event, filename) => {
           if (submitted) return;
-          if (typeof filename === 'string' && filename.includes('.git')) return;
+          if (typeof filename === 'string' && (filename.includes('.git') || filename.includes('node_modules'))) return;
           if (watchDebounce) clearTimeout(watchDebounce);
           watchDebounce = setTimeout(async () => {
             try {

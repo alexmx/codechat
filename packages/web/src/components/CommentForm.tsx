@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useReview } from '../context/ReviewContext';
 
 interface CommentFormProps {
@@ -9,8 +9,8 @@ interface CommentFormProps {
 }
 
 export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps) {
-  const { send } = useReview();
-  const [body, setBody] = useState('');
+  const { state, send, updateDraft } = useReview();
+  const body = state.activeDraft?.filePath === filePath ? (state.activeDraft.body ?? '') : '';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -24,8 +24,6 @@ export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps
       type: 'add_comment',
       data: { filePath, line, side, body: trimmed },
     });
-    setBody('');
-    onCancel();
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -46,7 +44,7 @@ export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps
       <textarea
         ref={textareaRef}
         value={body}
-        onChange={(e) => setBody(e.target.value)}
+        onChange={(e) => updateDraft(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Leave a comment"
         rows={3}
@@ -77,7 +75,7 @@ export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps
           Cancel
         </button>
         <span className="ml-auto text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          {navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+Enter to submit
+          {/(Mac|iPhone|iPad)/.test(navigator.userAgent) ? 'Cmd' : 'Ctrl'}+Enter to submit
         </span>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, readdir, unlink } from 'node:fs/promises';
 import type { Session, FileSummary } from './types.js';
 
 function getDataDir(): string {
@@ -13,8 +13,12 @@ function repoHash(repoPath: string): string {
   return createHash('sha256').update(repoPath).digest('hex').slice(0, 16);
 }
 
-function repoSessionPath(repoPath: string): string {
-  return join(getDataDir(), `${repoHash(repoPath)}.json`);
+function sessionFileName(repoPath: string, sessionId: string): string {
+  return `${repoHash(repoPath)}_${sessionId}.json`;
+}
+
+function sessionFilePath(repoPath: string, sessionId: string): string {
+  return join(getDataDir(), sessionFileName(repoPath, sessionId));
 }
 
 export async function createSession(
@@ -35,40 +39,69 @@ export async function createSession(
     comments: [],
     ...(message ? { message } : {}),
   };
+  // Remove any previous session file for this repo
+  await removeRepoSessions(repoPath);
   await saveSession(session);
   return session;
 }
 
 export async function loadSession(sessionId: string): Promise<Session> {
   const dir = getDataDir();
-  const entries = await readdir(dir);
-  for (const entry of entries) {
-    if (!entry.endsWith('.json')) continue;
-    try {
-      const data = await readFile(join(dir, entry), 'utf-8');
-      const session = JSON.parse(data) as Session;
-      if (session.id === sessionId) return session;
-    } catch {
-      continue;
-    }
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    throw new Error(`Session not found: ${sessionId}`);
   }
-  throw new Error(`Session not found: ${sessionId}`);
+  const match = entries.find((e) => e.endsWith(`_${sessionId}.json`));
+  if (!match) throw new Error(`Session not found: ${sessionId}`);
+  const data = await readFile(join(dir, match), 'utf-8');
+  return JSON.parse(data) as Session;
 }
 
 export async function saveSession(session: Session): Promise<void> {
   const dir = getDataDir();
   await mkdir(dir, { recursive: true });
   session.updatedAt = new Date().toISOString();
-  await writeFile(repoSessionPath(session.repoPath), JSON.stringify(session, null, 2), 'utf-8');
+  await writeFile(
+    sessionFilePath(session.repoPath, session.id),
+    JSON.stringify(session, null, 2),
+    'utf-8',
+  );
 }
 
 export async function findSessionByRepo(repoPath: string): Promise<Session | null> {
+  const dir = getDataDir();
+  const prefix = repoHash(repoPath) + '_';
+  let entries: string[];
   try {
-    const data = await readFile(repoSessionPath(repoPath), 'utf-8');
-    const session = JSON.parse(data) as Session;
-    return session;
+    entries = await readdir(dir);
   } catch {
     return null;
+  }
+  const match = entries.find((e) => e.startsWith(prefix) && e.endsWith('.json'));
+  if (!match) return null;
+  try {
+    const data = await readFile(join(dir, match), 'utf-8');
+    return JSON.parse(data) as Session;
+  } catch {
+    return null;
+  }
+}
+
+async function removeRepoSessions(repoPath: string): Promise<void> {
+  const dir = getDataDir();
+  const prefix = repoHash(repoPath);
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (entry.startsWith(prefix) && entry.endsWith('.json')) {
+      try { await unlink(join(dir, entry)); } catch { /* ignore */ }
+    }
   }
 }
 

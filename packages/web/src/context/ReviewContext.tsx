@@ -2,10 +2,18 @@ import { createContext, useContext, useReducer, useEffect, useCallback, type Rea
 import type { Session, Comment, FileSummary, ClientMessage, ServerMessage } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
 
+export interface CommentDraft {
+  filePath: string;
+  line: number;
+  side: 'old' | 'new';
+  body: string;
+}
+
 interface ReviewState {
   session: Session | null;
   isConnected: boolean;
   isSubmitted: boolean;
+  activeDraft: CommentDraft | null;
 }
 
 type ReviewAction =
@@ -14,12 +22,16 @@ type ReviewAction =
   | { type: 'COMMENT_DELETED'; id: string }
   | { type: 'DIFF_UPDATED'; diff: string; files: FileSummary[] }
   | { type: 'REVIEW_COMPLETE' }
-  | { type: 'CONNECTION_STATUS'; connected: boolean };
+  | { type: 'CONNECTION_STATUS'; connected: boolean }
+  | { type: 'START_DRAFT'; filePath: string; line: number; side: 'old' | 'new' }
+  | { type: 'UPDATE_DRAFT'; body: string }
+  | { type: 'DISCARD_DRAFT' };
 
 const initialState: ReviewState = {
   session: null,
   isConnected: false,
   isSubmitted: false,
+  activeDraft: null,
 };
 
 function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
@@ -30,6 +42,7 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       if (!state.session) return state;
       return {
         ...state,
+        activeDraft: null,
         session: {
           ...state.session,
           comments: [...state.session.comments, action.comment],
@@ -58,6 +71,16 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       return { ...state, isSubmitted: true };
     case 'CONNECTION_STATUS':
       return { ...state, isConnected: action.connected };
+    case 'START_DRAFT':
+      return {
+        ...state,
+        activeDraft: { filePath: action.filePath, line: action.line, side: action.side, body: '' },
+      };
+    case 'UPDATE_DRAFT':
+      if (!state.activeDraft) return state;
+      return { ...state, activeDraft: { ...state.activeDraft, body: action.body } };
+    case 'DISCARD_DRAFT':
+      return { ...state, activeDraft: null };
     default:
       return state;
   }
@@ -66,6 +89,9 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
 interface ReviewContextValue {
   state: ReviewState;
   send: (msg: ClientMessage) => void;
+  startDraft: (filePath: string, line: number, side: 'old' | 'new') => void;
+  updateDraft: (body: string) => void;
+  discardDraft: () => void;
 }
 
 const ReviewContext = createContext<ReviewContextValue | null>(null);
@@ -100,8 +126,20 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'CONNECTION_STATUS', connected: status === 'connected' });
   }, [status]);
 
+  const startDraft = useCallback((filePath: string, line: number, side: 'old' | 'new') => {
+    dispatch({ type: 'START_DRAFT', filePath, line, side });
+  }, []);
+
+  const updateDraft = useCallback((body: string) => {
+    dispatch({ type: 'UPDATE_DRAFT', body });
+  }, []);
+
+  const discardDraft = useCallback(() => {
+    dispatch({ type: 'DISCARD_DRAFT' });
+  }, []);
+
   return (
-    <ReviewContext.Provider value={{ state, send }}>
+    <ReviewContext.Provider value={{ state, send, startDraft, updateDraft, discardDraft }}>
       {children}
     </ReviewContext.Provider>
   );

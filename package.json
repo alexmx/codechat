@@ -5,6 +5,7 @@
     "build": "pnpm -r build",
     "build:cli": "pnpm --filter @codechat/cli build",
     "build:web": "pnpm --filter @codechat/web build",
-    "dev:web": "pnpm --filter @codechat/web dev"
+    "dev:web": "pnpm --filter @codechat/web dev",
+    "dev": "pnpm --filter @codechat/cli --filter @codechat/web --parallel dev"
   }
 }

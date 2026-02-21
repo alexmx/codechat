@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
-import { parseDiff, Diff, Hunk, getChangeKey, tokenize, markEdits } from 'react-diff-view';
+import { parseDiff, Diff, Hunk, tokenize, markEdits } from 'react-diff-view';
 import { refractor } from 'refractor';
 import tsx from 'refractor/tsx';
 import jsx from 'refractor/jsx';
@@ -144,11 +144,8 @@ interface FileDiffSectionProps {
 }
 
 function FileDiffSection({ file, filePath, viewType, comments, showResolved }: FileDiffSectionProps) {
-  const [commentingOnKey, setCommentingOnKey] = useState<string | null>(null);
-  const [commentingLineInfo, setCommentingLineInfo] = useState<{
-    line: number;
-    side: 'old' | 'new';
-  } | null>(null);
+  const { state, startDraft, discardDraft } = useReview();
+  const draft = state.activeDraft?.filePath === filePath ? state.activeDraft : null;
 
   const tokens = useMemo(() => {
     const language = detectLanguage(filePath);
@@ -167,6 +164,8 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
   }, [file.hunks, filePath]);
 
   const changeKeyMap = useMemo(() => buildChangeKeyMap(file.hunks), [file.hunks]);
+
+  const draftChangeKey = draft ? (changeKeyMap.get(`${draft.side}:${draft.line}`) ?? null) : null;
 
   const widgets = useMemo(() => {
     const w: Record<string, ReactNode> = {};
@@ -188,45 +187,39 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
         <CommentWidget
           comments={keyComments}
           onReply={() => {
-            setCommentingOnKey(changeKey);
             const c = keyComments[0];
-            setCommentingLineInfo({ line: c.line, side: c.side });
+            startDraft(filePath, c.line, c.side);
           }}
         />
       );
     }
 
-    if (commentingOnKey && commentingLineInfo) {
-      const existing = w[commentingOnKey];
-      w[commentingOnKey] = (
+    if (draftChangeKey) {
+      const existing = w[draftChangeKey];
+      w[draftChangeKey] = (
         <>
           {existing}
           <CommentForm
             filePath={filePath}
-            line={commentingLineInfo.line}
-            side={commentingLineInfo.side}
-            onCancel={() => {
-              setCommentingOnKey(null);
-              setCommentingLineInfo(null);
-            }}
+            line={draft!.line}
+            side={draft!.side}
+            onCancel={discardDraft}
           />
         </>
       );
     }
 
     return w;
-  }, [comments, commentingOnKey, commentingLineInfo, filePath, changeKeyMap, showResolved]);
+  }, [comments, draftChangeKey, draft, filePath, changeKeyMap, showResolved, startDraft, discardDraft]);
 
   const handleGutterClick = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ({ change }: { change: any }) => {
       if (!change) return;
-      const key = getChangeKey(change);
       const lineInfo = changeToLineInfo(change);
-      setCommentingOnKey(key);
-      setCommentingLineInfo(lineInfo);
+      startDraft(filePath, lineInfo.line, lineInfo.side);
     },
-    [],
+    [filePath, startDraft],
   );
 
   const gutterEvents = useMemo(

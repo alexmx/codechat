@@ -3,6 +3,8 @@ import type { ClientMessage, ServerMessage } from '../types';
 
 type Status = 'connecting' | 'connected' | 'disconnected';
 
+const MAX_BACKOFF = 10_000;
+
 export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
   const wsRef = useRef<WebSocket | null>(null);
   const onMessageRef = useRef(onMessage);
@@ -10,26 +12,78 @@ export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
 
   const [status, setStatus] = useState<Status>('connecting');
 
+  const queueRef = useRef<string[]>([]);
+
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}`);
-    wsRef.current = ws;
+    let unmounted = false;
+    let done = false;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let backoff = 1_000;
+    let initReceived = false;
 
-    ws.onopen = () => setStatus('connected');
-    ws.onclose = () => setStatus('disconnected');
-    ws.onerror = () => setStatus('disconnected');
-    ws.onmessage = (event) => {
-      try {
-        onMessageRef.current(JSON.parse(event.data) as ServerMessage);
-      } catch { /* ignore malformed */ }
+    function flushQueue(ws: WebSocket) {
+      while (queueRef.current.length > 0) {
+        ws.send(queueRef.current.shift()!);
+      }
+    }
+
+    function connect() {
+      if (unmounted || done) return;
+      setStatus('connecting');
+      initReceived = false;
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${protocol}//${window.location.host}`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        backoff = 1_000;
+        setStatus('connected');
+      };
+
+      ws.onclose = () => {
+        if (unmounted || done) return;
+        setStatus('disconnected');
+        reconnectTimer = setTimeout(() => {
+          backoff = Math.min(backoff * 2, MAX_BACKOFF);
+          connect();
+        }, backoff);
+      };
+
+      ws.onerror = () => {
+        // onclose will fire after onerror — reconnect is handled there
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data) as ServerMessage;
+          if (msg.type === 'review_complete') done = true;
+          if (msg.type === 'init') {
+            initReceived = true;
+            onMessageRef.current(msg);
+            flushQueue(ws);
+          } else {
+            onMessageRef.current(msg);
+          }
+        } catch { /* ignore malformed */ }
+      };
+    }
+
+    connect();
+
+    return () => {
+      unmounted = true;
+      clearTimeout(reconnectTimer);
+      wsRef.current?.close();
     };
-
-    return () => { ws.close(); };
   }, []);
 
   const send = useCallback((msg: ClientMessage) => {
+    const data = JSON.stringify(msg);
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(msg));
+      wsRef.current.send(data);
+    } else {
+      queueRef.current.push(data);
     }
   }, []);
 
