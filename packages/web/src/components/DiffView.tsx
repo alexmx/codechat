@@ -110,6 +110,7 @@ export function DiffView({ activeFile }: DiffViewProps) {
                 file={fileSummary}
                 commentCount={fileComments.length}
                 isCollapsed={isCollapsed}
+                isActive={activeFile === filePath}
                 onToggle={() => {
                   setCollapsedFiles((prev) => {
                     const next = new Set(prev);
@@ -132,6 +133,14 @@ export function DiffView({ activeFile }: DiffViewProps) {
           </div>
         );
       })}
+      {files.length > 0 && collapsedFiles.size >= files.length && (
+        <div
+          className="mt-4 text-center text-sm"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          All files collapsed. Click a file header to expand.
+        </div>
+      )}
     </div>
   );
 }

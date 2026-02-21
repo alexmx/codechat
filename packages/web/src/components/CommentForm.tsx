@@ -63,6 +63,7 @@ export function CommentForm({ filePath, line, endLine, side, onCancel }: Comment
           color: 'var(--color-text-primary)',
           border: '1px solid var(--color-border-default)',
           outline: 'none',
+          maxHeight: '192px',
         }}
         onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--color-link)')}
         onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--color-border-default)')}

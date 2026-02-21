@@ -86,11 +86,12 @@ function compactTree(node: TreeNode): TreeNode {
 interface FileListProps {
   activeFile: string | null;
   onSelectFile: (path: string) => void;
+  width?: number;
 }
 
 type ViewMode = 'flat' | 'tree';
 
-export function FileList({ activeFile, onSelectFile }: FileListProps) {
+export function FileList({ activeFile, onSelectFile, width }: FileListProps) {
   const { state } = useReview();
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
 
@@ -124,8 +125,8 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
     <aside
       ref={asideRef}
       onKeyDown={handleKeyDown}
-      className="w-72 shrink-0 overflow-y-auto"
-      style={{ backgroundColor: 'var(--color-deep-bg)', borderRight: '1px solid var(--color-border-separator)' }}
+      className="shrink-0 overflow-y-auto"
+      style={{ width: width ?? 288, backgroundColor: 'var(--color-deep-bg)', borderRight: '1px solid var(--color-border-separator)' }}
     >
       <div
         className="flex items-center justify-between px-4 py-3"
@@ -150,7 +151,7 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
             }}
             title="Tree view"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M4.75 7a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-4.5ZM5 4.75a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 5 4.75ZM6.75 10a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 0-1.5h-2.5Z" />
             </svg>
           </button>
@@ -164,7 +165,7 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
             }}
             title="Flat view"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M2 4.75a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm0 3.5a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8.25Zm0 3.5a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" />
             </svg>
           </button>

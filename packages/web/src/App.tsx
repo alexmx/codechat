@@ -1,4 +1,4 @@
-import { useState, useCallback, Component, type ReactNode } from 'react';
+import { useState, useCallback, useRef, Component, type ReactNode } from 'react';
 import { ReviewProvider, useReview } from './context/ReviewContext';
 import { ReviewHeader } from './components/ReviewHeader';
 import { FileList } from './components/FileList';
@@ -34,12 +34,39 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 function AppContent() {
   const { state } = useReview();
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(288);
+  const draggingRef = useRef(false);
 
   const handleSelectFile = useCallback((path: string) => {
     setActiveFile(path);
     const el = document.getElementById(`file-${encodeURIComponent(path)}`);
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    draggingRef.current = true;
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    function onMove(ev: MouseEvent) {
+      const newWidth = Math.max(200, Math.min(600, startWidth + ev.clientX - startX));
+      setSidebarWidth(newWidth);
+    }
+
+    function onUp() {
+      draggingRef.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [sidebarWidth]);
 
   if (!state.session) return <LoadingScreen />;
   if (state.isSubmitted) return <SubmittedScreen />;
@@ -48,7 +75,11 @@ function AppContent() {
     <div className="flex h-screen flex-col" style={{ backgroundColor: 'var(--color-page-bg)', color: 'var(--color-text-primary)' }}>
       <ReviewHeader />
       <div className="flex flex-1 overflow-hidden">
-        <FileList activeFile={activeFile} onSelectFile={handleSelectFile} />
+        <FileList activeFile={activeFile} onSelectFile={handleSelectFile} width={sidebarWidth} />
+        <div
+          className="sidebar-resize-handle shrink-0"
+          onMouseDown={handleResizeStart}
+        />
         <DiffView activeFile={activeFile} />
       </div>
     </div>

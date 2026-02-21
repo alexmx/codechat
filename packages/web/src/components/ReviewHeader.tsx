@@ -43,11 +43,12 @@ export function ReviewHeader() {
           <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             {session.files.length} file{session.files.length !== 1 ? 's' : ''} changed
           </span>
-          <span className="text-sm font-mono" style={{ color: 'var(--color-success)' }}>
-            +{totalAdditions}
-          </span>
-          <span className="text-sm font-mono" style={{ color: 'var(--color-danger)' }}>
-            -{totalDeletions}
+          <span
+            className="inline-flex items-center gap-2 rounded-md px-2 py-0.5 font-mono text-sm"
+            style={{ border: '1px solid var(--color-border-default)' }}
+          >
+            <span style={{ color: 'var(--color-success)' }}>+{totalAdditions}</span>
+            <span style={{ color: 'var(--color-danger)' }}>-{totalDeletions}</span>
           </span>
           {pendingCount > 0 && (
             <span
@@ -67,13 +68,22 @@ export function ReviewHeader() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {!state.isConnected && !state.isSubmitted && (
-            <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-warning)' }}>
+          {!state.isSubmitted && (
+            <span
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs"
+              style={{
+                border: '1px solid var(--color-border-default)',
+                color: state.isConnected ? 'var(--color-success)' : 'var(--color-warning)',
+              }}
+            >
               <span
-                className="animate-pulse inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: 'var(--color-warning)' }}
+                className="inline-block h-2 w-2 rounded-full"
+                style={{
+                  backgroundColor: state.isConnected ? 'var(--color-success)' : 'var(--color-warning)',
+                  animation: 'pulse-fade 2s ease-in-out infinite',
+                }}
               />
-              Reconnecting...
+              {state.isConnected ? 'Agent connected' : 'Reconnecting...'}
             </span>
           )}
           <button

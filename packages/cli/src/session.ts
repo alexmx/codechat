@@ -105,7 +105,7 @@ async function removeRepoSessions(repoPath: string): Promise<void> {
   }
 }
 
-/** Resume an existing session with fresh changes, marking previous comments as resolved. */
+/** Resume an existing session with fresh changes, resolving only comments the agent replied to. */
 export function resumeSession(
   session: Session,
   diff: string,
@@ -119,10 +119,10 @@ export function resumeSession(
   const replyMap = new Map(options?.replies?.map((r) => [r.commentId, r.body]));
 
   for (const comment of session.comments) {
-    comment.resolved = true;
     const reply = replyMap.get(comment.id);
     if (reply) {
       comment.agentReply = reply;
+      comment.resolved = true;
     }
   }
 

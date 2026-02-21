@@ -23,12 +23,12 @@ export function SubmitDialog({ onClose }: SubmitDialogProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center"
       style={{ backgroundColor: 'var(--color-overlay-bg)' }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-lg p-0"
+        className="animate-scale-in w-full max-w-md rounded-lg p-0"
         style={{ backgroundColor: 'var(--color-page-bg)', border: '1px solid var(--color-border-default)' }}
         onClick={(e) => e.stopPropagation()}
       >

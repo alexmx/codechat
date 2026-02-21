@@ -305,6 +305,11 @@
   background-color: var(--diff-gutter-hover-bg) !important;
 }
 
+/* Hide the "+" icon during drag selection — user is selecting, not adding */
+.diff-gutter-selected::after {
+  opacity: 0 !important;
+}
+
 /* markEdits enhancer — character-level edit highlights */
 .diff-code-edit .diff-code-edit-marker {
   background-color: rgba(210, 153, 34, 0.2);

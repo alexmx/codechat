@@ -1,17 +1,29 @@
+import { useEffect, useState } from 'react';
 import type { FileSummary } from '../types';
 
 interface FileHeaderProps {
   file: FileSummary;
   commentCount: number;
   isCollapsed: boolean;
+  isActive?: boolean;
   onToggle: () => void;
 }
 
-export function FileHeader({ file, commentCount, isCollapsed, onToggle }: FileHeaderProps) {
+export function FileHeader({ file, commentCount, isCollapsed, isActive, onToggle }: FileHeaderProps) {
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (isActive) {
+      setFlash(true);
+      const timer = setTimeout(() => setFlash(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive]);
+
   return (
     <button
       onClick={onToggle}
-      className="flex w-full items-center gap-3 rounded-t-md px-4 py-2 text-left"
+      className={`flex w-full cursor-pointer items-center gap-3 rounded-t-md px-4 py-2 text-left${flash ? ' animate-highlight-flash' : ''}`}
       style={{
         backgroundColor: 'var(--color-surface-bg)',
         border: '1px solid var(--color-border-default)',

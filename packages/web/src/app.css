@@ -153,6 +153,58 @@
   --color-scrollbar-thumb-hover: #484f58;
 }
 
+/* ── Animations ──────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-fade {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes highlight-flash {
+  0% { background-color: rgba(56, 139, 253, 0.25); }
+  100% { background-color: transparent; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.15s ease-out;
+}
+
+.animate-highlight-flash {
+  animation: highlight-flash 1.5s ease-out;
+}
+
+/* ── Sidebar resize handle ───────────────────────────── */
+
+.sidebar-resize-handle {
+  width: 4px;
+  cursor: col-resize;
+  background-color: transparent;
+  transition: background-color 0.15s;
+}
+
+.sidebar-resize-handle:hover {
+  background-color: var(--color-info);
+}
+
 /* ── Base styles ──────────────────────────────────────── */
 
 body {
