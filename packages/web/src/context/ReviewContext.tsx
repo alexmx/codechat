@@ -110,6 +110,9 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     switch (msg.type) {
       case 'init':
         dispatch({ type: 'INIT', session: msg.data });
+        if (window.location.pathname !== `/${msg.data.id}`) {
+          history.replaceState(null, '', `/${msg.data.id}`);
+        }
         break;
       case 'comment_added':
         dispatch({ type: 'COMMENT_ADDED', comment: msg.data });

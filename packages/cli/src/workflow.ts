@@ -15,7 +15,6 @@ export class WorkflowError extends Error {
 export interface ReviewOptions {
   repoPath: string;
   sessionId?: string;
-  message?: string;
   replies?: { commentId: string; body: string; resolved?: boolean }[];
   skipReview?: boolean;
   port?: number;
@@ -48,7 +47,6 @@ export async function executeReview(options: ReviewOptions): Promise<ReviewOutco
   try {
     session = await resolveSession(canonicalPath, diff, files, {
       sessionId: options.sessionId,
-      message: options.message,
       replies: options.replies,
     });
   } catch (err) {

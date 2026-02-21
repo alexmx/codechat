@@ -283,7 +283,7 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
 
       resolveServer({
         port: actualPort,
-        url: `http://127.0.0.1:${actualPort}`,
+        url: `http://127.0.0.1:${actualPort}/${session.id}`,
         result: resultPromise,
       });
     });

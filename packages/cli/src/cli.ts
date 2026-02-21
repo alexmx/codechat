@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
+import { version } from './version.js';
 import { executeReview, getSessionById, WorkflowError } from './workflow.js';
 
 function printUsage(): void {
@@ -10,15 +11,16 @@ Usage: codechat <command> [options]
 Commands:
   review        Start an interactive code review (default)
   get-session   Retrieve a session by ID
+  mcp           Start MCP server over stdio
 
 Review options:
   -s, --session-id <id>     Reuse an existing session
-  -m, --message <text>      Description of what changed
   -r, --replies <json|->    JSON array of replies (use - for stdin)
   --skip-review             Return result without opening browser
   -p, --port <number>       Use a specific port (default: random)
   -t, --timeout <minutes>   Session timeout in minutes (default: 30)
   --no-open                 Don't open the browser automatically
+  -v, --version             Show version
   -h, --help                Show this help
 `);
 }
@@ -33,7 +35,6 @@ async function readStdin(): Promise<string> {
 
 async function runReview(options: {
   'session-id'?: string;
-  message?: string;
   replies?: string;
   'skip-review'?: boolean;
   port?: string;
@@ -54,7 +55,6 @@ async function runReview(options: {
   const outcome = await executeReview({
     repoPath: process.cwd(),
     sessionId: options['session-id'],
-    message: options.message,
     replies,
     skipReview: options['skip-review'],
     port: options.port ? parseInt(options.port, 10) : undefined,
@@ -79,6 +79,11 @@ async function runGetSession(sessionId: string): Promise<void> {
   console.log(JSON.stringify(session, null, 2));
 }
 
+async function runMcp(): Promise<void> {
+  const { startMcpServer } = await import('./mcp-server.js');
+  await startMcpServer();
+}
+
 process.on('SIGINT', () => {
   process.stderr.write('\nReview cancelled.\n');
   process.exit(130);
@@ -89,18 +94,23 @@ async function main(): Promise<void> {
     args: process.argv.slice(2),
     options: {
       'session-id': { type: 'string', short: 's' },
-      message: { type: 'string', short: 'm' },
       replies: { type: 'string', short: 'r' },
       'skip-review': { type: 'boolean' },
       port: { type: 'string', short: 'p' },
       timeout: { type: 'string', short: 't' },
       'no-open': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
+      version: { type: 'boolean', short: 'v' },
     },
     allowPositionals: true,
   });
 
   const command = positionals[0] ?? 'review';
+
+  if (values.version) {
+    console.log(version);
+    process.exit(0);
+  }
 
   if (values.help || command === 'help') {
     printUsage();
@@ -116,6 +126,8 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     await runGetSession(sessionId);
+  } else if (command === 'mcp') {
+    await runMcp();
   } else {
     console.error(`Unknown command: ${command}`);
     process.exit(1);

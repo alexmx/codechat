@@ -7,7 +7,6 @@ export interface Session {
   diff: string;
   files: FileSummary[];
   comments: Comment[];
-  message?: string;
 }
 
 export interface FileSummary {

@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "codechat": "./dist/cli.js",
-    "codechat-mcp": "./dist/mcp-server.js"
+    "codechat": "./dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": ["dist", "web-dist"],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch"

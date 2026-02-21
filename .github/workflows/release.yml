@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.codechat-version']
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat .codechat-version)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.VERSION }}" >/dev/null 2>&1; then
+            echo "Tag v${{ steps.version.outputs.VERSION }} already exists, skipping release"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag v${{ steps.version.outputs.VERSION }} does not exist, proceeding with release"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        if: steps.check_tag.outputs.exists == 'false'
+        run: pnpm install --frozen-lockfile
+
+      - name: Set package version
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          cd packages/cli
+          npm pkg set version="$VERSION"
+          cd ../web
+          npm pkg set version="$VERSION"
+
+      - name: Build packages
+        if: steps.check_tag.outputs.exists == 'false'
+        run: pnpm build
+
+      - name: Bundle web assets into CLI package
+        if: steps.check_tag.outputs.exists == 'false'
+        run: cp -r packages/web/dist packages/cli/web-dist
+
+      - name: Verify CLI
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          node packages/cli/dist/cli.js --help 2>&1 | head -5
+          echo "CLI verified"
+
+      - name: Package tarball
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          cd packages/cli
+          npm pack
+          TARBALL=$(ls codechat-cli-*.tgz)
+          mv "$TARBALL" "codechat-${{ steps.version.outputs.VERSION }}.tgz"
+          shasum -a 256 "codechat-${{ steps.version.outputs.VERSION }}.tgz" > "codechat-${{ steps.version.outputs.VERSION }}.tgz.sha256"
+          echo "Package created:"
+          ls -lh codechat-${{ steps.version.outputs.VERSION }}.*
+
+      - name: Create git tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
+          git push origin "v${{ steps.version.outputs.VERSION }}"
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: Release v${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            packages/cli/codechat-${{ steps.version.outputs.VERSION }}.tgz
+            packages/cli/codechat-${{ steps.version.outputs.VERSION }}.tgz.sha256
+
+      - name: Update Homebrew formula
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          SHA256=$(shasum -a 256 packages/cli/codechat-${VERSION}.tgz | awk '{print $1}')
+          echo "Tarball SHA256: $SHA256"
+
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/alexmx/homebrew-tools.git" /tmp/homebrew-tools
+          cd /tmp/homebrew-tools
+
+          sed -i "s|url \".*\"|url \"https://github.com/alexmx/codechat/releases/download/v${VERSION}/codechat-${VERSION}.tgz\"|" Formula/codechat.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/codechat.rb
+
+          echo "Updated Formula/codechat.rb:"
+          cat Formula/codechat.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/codechat.rb
+          git commit -m "Update codechat to v${VERSION}"
+          git push

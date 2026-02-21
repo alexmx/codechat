@@ -34,7 +34,7 @@ export function ReviewHeader() {
     <>
       <header
         className="flex items-center justify-between px-4 py-3"
-        style={{ backgroundColor: 'var(--color-deep-bg)', borderBottom: session.message ? 'none' : '1px solid var(--color-border-separator)' }}
+        style={{ backgroundColor: 'var(--color-deep-bg)', borderBottom: '1px solid var(--color-border-separator)' }}
       >
         <div className="flex items-center gap-4">
           <span className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
@@ -115,19 +115,6 @@ export function ReviewHeader() {
           </button>
         </div>
       </header>
-      {session.message && (
-        <div
-          className="px-4 py-2 text-sm"
-          style={{
-            backgroundColor: 'var(--color-deep-bg)',
-            borderBottom: '1px solid var(--color-border-separator)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          <span className="font-medium" style={{ color: 'var(--color-text-muted)', marginRight: '8px' }}>Agent:</span>
-          {session.message}
-        </div>
-      )}
       {showSubmitDialog && (
         <SubmitDialog onClose={() => setShowSubmitDialog(false)} />
       )}
