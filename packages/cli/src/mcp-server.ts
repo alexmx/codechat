@@ -27,8 +27,12 @@ server.tool(
     repoPath: z.string().describe('Absolute path to the git repository'),
     sessionId: z.string().optional().describe('Reuse an existing session ID'),
     message: z.string().optional().describe('Description of what changed, shown to the reviewer'),
+    replies: z.array(z.object({
+      commentId: z.string().describe('The comment ID to reply to'),
+      body: z.string().describe('The reply text'),
+    })).optional().describe('Replies to comments from the previous review round'),
   },
-  async ({ repoPath, sessionId, message }) => {
+  async ({ repoPath, sessionId, message, replies }) => {
     if (!(await isGitRepo(repoPath))) {
       return {
         content: [{ type: 'text' as const, text: 'Error: Not a git repository.' }],
@@ -51,7 +55,7 @@ server.tool(
     if (sessionId) {
       try {
         session = await loadSession(sessionId);
-        resumeSession(session, diff, files, message);
+        resumeSession(session, diff, files, { message, replies });
         await saveSession(session);
       } catch {
         return {
@@ -63,7 +67,7 @@ server.tool(
       const existing = await findSessionByRepo(canonicalPath);
       if (existing) {
         session = existing;
-        resumeSession(session, diff, files, message);
+        resumeSession(session, diff, files, { message, replies });
         await saveSession(session);
       } else {
         session = await createSession(canonicalPath, diff, files, message);

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useReview } from '../context/ReviewContext';
 
 interface SubmitDialogProps {
@@ -6,12 +7,17 @@ interface SubmitDialogProps {
 
 export function SubmitDialog({ onClose }: SubmitDialogProps) {
   const { state, send } = useReview();
+  const [summary, setSummary] = useState('');
   const comments = state.session?.comments ?? [];
   const pendingCount = comments.filter((c) => !c.resolved).length;
   const resolvedCount = comments.filter((c) => c.resolved).length;
 
   function submit() {
-    send({ type: 'submit_review' });
+    const trimmed = summary.trim();
+    send({
+      type: 'submit_review',
+      ...(trimmed ? { data: { summary: trimmed } } : {}),
+    });
     onClose();
   }
 
@@ -32,7 +38,7 @@ export function SubmitDialog({ onClose }: SubmitDialogProps) {
           </h2>
         </div>
         <div className="px-4 py-4">
-          <p className="mb-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          <p className="mb-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             {pendingCount > 0
               ? `${pendingCount} new comment${pendingCount !== 1 ? 's' : ''} will be sent back to the agent.`
               : 'No new comments — this will approve the changes.'}
@@ -42,6 +48,21 @@ export function SubmitDialog({ onClose }: SubmitDialogProps) {
               </span>
             )}
           </p>
+          <textarea
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="General comment (optional)"
+            rows={3}
+            className="mb-3 w-full resize-y rounded-md px-3 py-2 text-sm"
+            style={{
+              backgroundColor: 'var(--color-surface-bg)',
+              color: 'var(--color-text-primary)',
+              border: '1px solid var(--color-border-default)',
+              outline: 'none',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--color-info)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--color-border-default)')}
+          />
           <button
             onClick={submit}
             className="flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium"

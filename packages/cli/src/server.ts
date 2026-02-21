@@ -30,6 +30,9 @@ const DeleteCommentSchema = z.object({
 
 const SubmitReviewSchema = z.object({
   type: z.literal('submit_review'),
+  data: z.object({
+    summary: z.string().optional(),
+  }).optional(),
 });
 
 const ClientMessageSchema = z.discriminatedUnion('type', [
@@ -131,6 +134,8 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
 
     const wss = new WebSocketServer({ server: httpServer });
 
+    let reviewSummary: string | undefined;
+
     async function doSubmit(): Promise<void> {
       if (submitted) return;
       submitted = true;
@@ -146,6 +151,7 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
         sessionId: session.id,
         status,
         comments: session.comments,
+        ...(reviewSummary ? { summary: reviewSummary } : {}),
       };
 
       if (timeoutTimer) clearTimeout(timeoutTimer);
@@ -222,6 +228,9 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
           }
 
           case 'submit_review': {
+            if (msg.data?.summary) {
+              reviewSummary = msg.data.summary;
+            }
             await doSubmit();
             break;
           }

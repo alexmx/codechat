@@ -77,15 +77,23 @@ export function resumeSession(
   session: Session,
   diff: string,
   files: FileSummary[],
-  message?: string,
+  options?: { message?: string; replies?: { commentId: string; body: string }[] },
 ): void {
   session.diff = diff;
   session.files = files;
   session.status = 'pending';
+
+  const replyMap = new Map(options?.replies?.map((r) => [r.commentId, r.body]));
+
   for (const comment of session.comments) {
     comment.resolved = true;
+    const reply = replyMap.get(comment.id);
+    if (reply) {
+      comment.agentReply = reply;
+    }
   }
-  if (message !== undefined) {
-    session.message = message;
+
+  if (options?.message !== undefined) {
+    session.message = options.message;
   }
 }

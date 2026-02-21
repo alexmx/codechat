@@ -54,13 +54,13 @@ async function runReview(options: {
   let session;
   if (options['session-id']) {
     session = await loadSession(options['session-id']);
-    resumeSession(session, diff, files, options.message);
+    resumeSession(session, diff, files, { message: options.message });
     await saveSession(session);
   } else {
     const existing = await findSessionByRepo(repoPath);
     if (existing) {
       session = existing;
-      resumeSession(session, diff, files, options.message);
+      resumeSession(session, diff, files, { message: options.message });
       await saveSession(session);
     } else {
       session = await createSession(repoPath, diff, files, options.message);

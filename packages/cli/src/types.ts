@@ -26,12 +26,14 @@ export interface Comment {
   body: string;
   createdAt: string;
   resolved: boolean;
+  agentReply?: string;
 }
 
 export interface ReviewResult {
   sessionId: string;
   status: 'approved' | 'changes_requested';
   comments: Comment[];
+  summary?: string;
 }
 
 export interface ReviewServer {
@@ -51,4 +53,4 @@ export type ServerMessage =
 export type ClientMessage =
   | { type: 'add_comment'; data: Omit<Comment, 'id' | 'createdAt' | 'resolved'> }
   | { type: 'delete_comment'; data: { id: string } }
-  | { type: 'submit_review' };
+  | { type: 'submit_review'; data?: { summary?: string } };
