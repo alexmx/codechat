@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react';
-import type { Session, Comment, ClientMessage, ServerMessage } from '../types';
+import type { Session, Comment, FileSummary, ClientMessage, ServerMessage } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
 
 interface ReviewState {
@@ -12,6 +12,7 @@ type ReviewAction =
   | { type: 'INIT'; session: Session }
   | { type: 'COMMENT_ADDED'; comment: Comment }
   | { type: 'COMMENT_DELETED'; id: string }
+  | { type: 'DIFF_UPDATED'; diff: string; files: FileSummary[] }
   | { type: 'REVIEW_COMPLETE' }
   | { type: 'CONNECTION_STATUS'; connected: boolean };
 
@@ -43,6 +44,16 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
           comments: state.session.comments.filter((c) => c.id !== action.id),
         },
       };
+    case 'DIFF_UPDATED':
+      if (!state.session) return state;
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          diff: action.diff,
+          files: action.files,
+        },
+      };
     case 'REVIEW_COMPLETE':
       return { ...state, isSubmitted: true };
     case 'CONNECTION_STATUS':
@@ -72,6 +83,9 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         break;
       case 'comment_deleted':
         dispatch({ type: 'COMMENT_DELETED', id: msg.data.id });
+        break;
+      case 'diff_updated':
+        dispatch({ type: 'DIFF_UPDATED', diff: msg.data.diff, files: msg.data.files });
         break;
       case 'review_complete':
         dispatch({ type: 'REVIEW_COMPLETE' });

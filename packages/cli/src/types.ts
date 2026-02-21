@@ -48,6 +48,7 @@ export type ServerMessage =
   | { type: 'init'; data: Session }
   | { type: 'comment_added'; data: Comment }
   | { type: 'comment_deleted'; data: { id: string } }
+  | { type: 'diff_updated'; data: { diff: string; files: FileSummary[] } }
   | { type: 'review_complete' };
 
 export type ClientMessage =

@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { watch, type FSWatcher } from 'node:fs';
 import { join, extname } from 'node:path';
 import { readFile, stat } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -11,6 +12,7 @@ import type {
   ReviewServer,
   ServerMessage,
 } from './types.js';
+import { getDiff, parseFileSummaries } from './git.js';
 import { saveSession } from './session.js';
 
 const AddCommentSchema = z.object({
@@ -127,6 +129,8 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
     let submitted = false;
     let disconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+    let fileWatcher: FSWatcher | null = null;
+    let watchDebounce: ReturnType<typeof setTimeout> | null = null;
 
     const httpServer = createServer(async (req, res) => {
       await serveStatic(webDistPath, req, res);
@@ -156,6 +160,11 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
 
       if (timeoutTimer) clearTimeout(timeoutTimer);
       if (disconnectTimer) clearTimeout(disconnectTimer);
+      if (watchDebounce) clearTimeout(watchDebounce);
+      if (fileWatcher) {
+        fileWatcher.close();
+        fileWatcher = null;
+      }
 
       for (const client of wss.clients) {
         client.close();
@@ -246,6 +255,29 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
       timeoutTimer = setTimeout(() => {
         doSubmit().catch(() => {});
       }, timeout);
+
+      // Watch for file changes and update diff live
+      try {
+        fileWatcher = watch(session.repoPath, { recursive: true }, (_event, filename) => {
+          if (submitted) return;
+          if (typeof filename === 'string' && filename.includes('.git')) return;
+          if (watchDebounce) clearTimeout(watchDebounce);
+          watchDebounce = setTimeout(async () => {
+            try {
+              const newDiff = await getDiff(session.repoPath);
+              if (newDiff === session.diff) return;
+              const newFiles = parseFileSummaries(newDiff);
+              session.diff = newDiff;
+              session.files = newFiles;
+              broadcast(wss, { type: 'diff_updated', data: { diff: newDiff, files: newFiles } });
+            } catch {
+              // getDiff may fail transiently (e.g. mid-write); ignore and retry on next event
+            }
+          }, 500);
+        });
+      } catch {
+        // fs.watch may not be available; proceed without live updates
+      }
 
       resolveServer({
         port: actualPort,
