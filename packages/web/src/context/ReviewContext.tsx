@@ -5,6 +5,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 export interface CommentDraft {
   filePath: string;
   line: number;
+  endLine?: number;
   side: 'old' | 'new';
   body: string;
 }
@@ -23,7 +24,7 @@ type ReviewAction =
   | { type: 'DIFF_UPDATED'; diff: string; files: FileSummary[] }
   | { type: 'REVIEW_COMPLETE' }
   | { type: 'CONNECTION_STATUS'; connected: boolean }
-  | { type: 'START_DRAFT'; filePath: string; line: number; side: 'old' | 'new' }
+  | { type: 'START_DRAFT'; filePath: string; line: number; side: 'old' | 'new'; endLine?: number }
   | { type: 'UPDATE_DRAFT'; body: string }
   | { type: 'DISCARD_DRAFT' };
 
@@ -74,7 +75,13 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
     case 'START_DRAFT':
       return {
         ...state,
-        activeDraft: { filePath: action.filePath, line: action.line, side: action.side, body: '' },
+        activeDraft: {
+          filePath: action.filePath,
+          line: action.line,
+          ...(action.endLine ? { endLine: action.endLine } : {}),
+          side: action.side,
+          body: '',
+        },
       };
     case 'UPDATE_DRAFT':
       if (!state.activeDraft) return state;
@@ -89,7 +96,7 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
 interface ReviewContextValue {
   state: ReviewState;
   send: (msg: ClientMessage) => void;
-  startDraft: (filePath: string, line: number, side: 'old' | 'new') => void;
+  startDraft: (filePath: string, line: number, side: 'old' | 'new', endLine?: number) => void;
   updateDraft: (body: string) => void;
   discardDraft: () => void;
 }
@@ -126,8 +133,8 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'CONNECTION_STATUS', connected: status === 'connected' });
   }, [status]);
 
-  const startDraft = useCallback((filePath: string, line: number, side: 'old' | 'new') => {
-    dispatch({ type: 'START_DRAFT', filePath, line, side });
+  const startDraft = useCallback((filePath: string, line: number, side: 'old' | 'new', endLine?: number) => {
+    dispatch({ type: 'START_DRAFT', filePath, line, side, endLine });
   }, []);
 
   const updateDraft = useCallback((body: string) => {

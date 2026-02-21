@@ -4,11 +4,12 @@ import { useReview } from '../context/ReviewContext';
 interface CommentFormProps {
   filePath: string;
   line: number;
+  endLine?: number;
   side: 'old' | 'new';
   onCancel: () => void;
 }
 
-export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps) {
+export function CommentForm({ filePath, line, endLine, side, onCancel }: CommentFormProps) {
   const { state, send, updateDraft } = useReview();
   const body = state.activeDraft?.filePath === filePath ? (state.activeDraft.body ?? '') : '';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -22,7 +23,7 @@ export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps
     if (!trimmed) return;
     send({
       type: 'add_comment',
-      data: { filePath, line, side, body: trimmed },
+      data: { filePath, line, ...(endLine ? { endLine } : {}), side, body: trimmed },
     });
   }
 
@@ -41,6 +42,14 @@ export function CommentForm({ filePath, line, side, onCancel }: CommentFormProps
       className="my-2 rounded-md p-3"
       style={{ backgroundColor: 'var(--color-page-bg)', border: '1px solid var(--color-border-default)' }}
     >
+      {endLine && endLine !== line && (
+        <div
+          className="mb-2 text-xs font-medium"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          Lines {line}&ndash;{endLine}
+        </div>
+      )}
       <textarea
         ref={textareaRef}
         value={body}

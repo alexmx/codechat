@@ -20,6 +20,7 @@ const AddCommentSchema = z.object({
   data: z.object({
     filePath: z.string(),
     line: z.number().int(),
+    endLine: z.number().int().optional(),
     side: z.enum(['old', 'new']),
     body: z.string().min(1),
   }),
@@ -210,11 +211,12 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
 
         switch (msg.type) {
           case 'add_comment': {
-            const { filePath, line, side, body } = msg.data;
+            const { filePath, line, endLine, side, body } = msg.data;
             const comment: Comment = {
               id: randomUUID(),
               filePath,
               line,
+              ...(endLine && endLine !== line ? { endLine } : {}),
               side,
               body,
               createdAt: new Date().toISOString(),

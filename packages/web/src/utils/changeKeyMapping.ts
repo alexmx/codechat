@@ -29,6 +29,35 @@ export function buildChangeKeyMap(hunks: AnyHunk[]): Map<string, string> {
 }
 
 /**
+ * Get changeKeys for all lines in a range on a given side.
+ */
+export function getChangeKeysInRange(
+  hunks: AnyHunk[],
+  side: 'old' | 'new',
+  startLine: number,
+  endLine: number,
+): string[] {
+  const keys: string[] = [];
+  for (const hunk of hunks) {
+    for (const change of hunk.changes) {
+      const key = getChangeKey(change);
+      let lineNum: number | undefined;
+      if (side === 'new') {
+        if (change.type === 'insert') lineNum = change.lineNumber;
+        else if (change.type === 'normal') lineNum = change.newLineNumber;
+      } else {
+        if (change.type === 'delete') lineNum = change.lineNumber;
+        else if (change.type === 'normal') lineNum = change.oldLineNumber;
+      }
+      if (lineNum !== undefined && lineNum >= startLine && lineNum <= endLine) {
+        keys.push(key);
+      }
+    }
+  }
+  return keys;
+}
+
+/**
  * Extract (line, side) info from a change object for creating a Comment.
  */
 export function changeToLineInfo(change: AnyChange): { line: number; side: 'old' | 'new' } {

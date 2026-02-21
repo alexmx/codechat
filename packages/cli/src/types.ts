@@ -22,6 +22,7 @@ export interface Comment {
   id: string;
   filePath: string;
   line: number;
+  endLine?: number;
   side: 'old' | 'new';
   body: string;
   createdAt: string;

@@ -300,6 +300,11 @@
   color: var(--syntax-inserted);
 }
 
+/* Gutter highlight during drag selection (matches code cell highlight from selectedChanges) */
+.diff-gutter-selected {
+  background-color: var(--diff-gutter-hover-bg) !important;
+}
+
 /* markEdits enhancer — character-level edit highlights */
 .diff-code-edit .diff-code-edit-marker {
   background-color: rgba(210, 153, 34, 0.2);

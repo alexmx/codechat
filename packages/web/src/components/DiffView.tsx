@@ -8,7 +8,8 @@ import { useReview } from '../context/ReviewContext';
 import { FileHeader } from './FileHeader';
 import { CommentWidget } from './CommentWidget';
 import { CommentForm } from './CommentForm';
-import { buildChangeKeyMap, changeToLineInfo } from '../utils/changeKeyMapping';
+import { buildChangeKeyMap } from '../utils/changeKeyMapping';
+import { useGutterDrag } from '../hooks/useGutterDrag';
 import { detectLanguage } from '../utils/languageDetect';
 import type { Comment } from '../types';
 
@@ -165,7 +166,23 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
 
   const changeKeyMap = useMemo(() => buildChangeKeyMap(file.hunks), [file.hunks]);
 
-  const draftChangeKey = draft ? (changeKeyMap.get(`${draft.side}:${draft.line}`) ?? null) : null;
+  const handleDragSelect = useCallback(
+    (side: 'old' | 'new', startLine: number, endLine: number) => {
+      startDraft(filePath, startLine, side, endLine !== startLine ? endLine : undefined);
+    },
+    [filePath, startDraft],
+  );
+
+  const { gutterEvents, selectedChanges } = useGutterDrag({
+    hunks: file.hunks,
+    onSelect: handleDragSelect,
+  });
+
+  // For range comments, anchor the widget at endLine so it appears after the last line of the range
+  const draftAnchorLine = draft ? (draft.endLine ?? draft.line) : null;
+  const draftChangeKey = draft && draftAnchorLine
+    ? (changeKeyMap.get(`${draft.side}:${draftAnchorLine}`) ?? null)
+    : null;
 
   const widgets = useMemo(() => {
     const w: Record<string, ReactNode> = {};
@@ -174,7 +191,9 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
 
     const commentsByKey = new Map<string, Comment[]>();
     for (const comment of visibleComments) {
-      const changeKey = changeKeyMap.get(`${comment.side}:${comment.line}`) ?? null;
+      // Anchor at endLine for range comments so the widget sits after the last line
+      const anchorLine = comment.endLine ?? comment.line;
+      const changeKey = changeKeyMap.get(`${comment.side}:${anchorLine}`) ?? null;
       if (changeKey) {
         const existing = commentsByKey.get(changeKey) ?? [];
         existing.push(comment);
@@ -188,7 +207,7 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
           comments={keyComments}
           onReply={() => {
             const c = keyComments[0];
-            startDraft(filePath, c.line, c.side);
+            startDraft(filePath, c.line, c.side, c.endLine);
           }}
         />
       );
@@ -203,6 +222,7 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
             filePath={filePath}
             line={draft!.line}
             side={draft!.side}
+            endLine={draft!.endLine}
             onCancel={discardDraft}
           />
         </>
@@ -211,23 +231,6 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
 
     return w;
   }, [comments, draftChangeKey, draft, filePath, changeKeyMap, showResolved, startDraft, discardDraft]);
-
-  const handleGutterClick = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ({ change }: { change: any }) => {
-      if (!change) return;
-      const lineInfo = changeToLineInfo(change);
-      startDraft(filePath, lineInfo.line, lineInfo.side);
-    },
-    [filePath, startDraft],
-  );
-
-  const gutterEvents = useMemo(
-    () => ({
-      onClick: handleGutterClick,
-    }),
-    [handleGutterClick],
-  );
 
   if (file.hunks.length === 0) {
     return (
@@ -260,6 +263,7 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
         widgets={widgets}
         tokens={tokens}
         gutterEvents={gutterEvents}
+        selectedChanges={selectedChanges}
       >
         {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
       </Diff>

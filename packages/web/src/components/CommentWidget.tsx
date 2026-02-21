@@ -85,6 +85,14 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
               )}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
+                  {comment.endLine && comment.endLine !== comment.line && (
+                    <span
+                      className="mb-1 inline-block rounded px-1.5 py-0.5 text-xs font-medium"
+                      style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-text-muted)' }}
+                    >
+                      Lines {comment.line}&ndash;{comment.endLine}
+                    </span>
+                  )}
                   <p
                     className="whitespace-pre-wrap text-sm"
                     style={{ color: 'var(--color-text-primary)' }}
