@@ -8,26 +8,28 @@ export function ReviewHeader() {
   const { theme, toggleTheme } = useTheme();
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
-  if (!state.review) return null;
+  if (!state.session) return null;
 
-  const { review } = state;
+  const { session } = state;
   const { totalAdditions, totalDeletions } = useMemo(() => ({
-    totalAdditions: review.files.reduce((sum, f) => sum + f.additions, 0),
-    totalDeletions: review.files.reduce((sum, f) => sum + f.deletions, 0),
-  }), [review.files]);
+    totalAdditions: session.files.reduce((sum, f) => sum + f.additions, 0),
+    totalDeletions: session.files.reduce((sum, f) => sum + f.deletions, 0),
+  }), [session.files]);
+
+  const pendingCount = session.comments.filter((c) => !c.resolved).length;
 
   return (
     <>
       <header
         className="flex items-center justify-between px-4 py-3"
-        style={{ backgroundColor: 'var(--color-deep-bg)', borderBottom: '1px solid var(--color-border-separator)' }}
+        style={{ backgroundColor: 'var(--color-deep-bg)', borderBottom: session.message ? 'none' : '1px solid var(--color-border-separator)' }}
       >
         <div className="flex items-center gap-4">
           <span className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
             CodeChat
           </span>
           <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            {review.files.length} file{review.files.length !== 1 ? 's' : ''} changed
+            {session.files.length} file{session.files.length !== 1 ? 's' : ''} changed
           </span>
           <span className="text-sm font-mono" style={{ color: 'var(--color-success)' }}>
             +{totalAdditions}
@@ -35,12 +37,12 @@ export function ReviewHeader() {
           <span className="text-sm font-mono" style={{ color: 'var(--color-danger)' }}>
             -{totalDeletions}
           </span>
-          {review.comments.length > 0 && (
+          {pendingCount > 0 && (
             <span
               className="rounded-full px-2 py-0.5 text-xs font-medium"
               style={{ backgroundColor: 'var(--color-info)', color: 'var(--color-text-on-emphasis)' }}
             >
-              {review.comments.length} comment{review.comments.length !== 1 ? 's' : ''}
+              {pendingCount} comment{pendingCount !== 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -70,10 +72,23 @@ export function ReviewHeader() {
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-btn-green-hover)')}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-btn-green-bg)')}
           >
-            Review changes
+            Submit review
           </button>
         </div>
       </header>
+      {session.message && (
+        <div
+          className="px-4 py-2 text-sm"
+          style={{
+            backgroundColor: 'var(--color-deep-bg)',
+            borderBottom: '1px solid var(--color-border-separator)',
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          <span className="font-medium" style={{ color: 'var(--color-text-muted)', marginRight: '8px' }}>Agent:</span>
+          {session.message}
+        </div>
+      )}
       {showSubmitDialog && (
         <SubmitDialog onClose={() => setShowSubmitDialog(false)} />
       )}

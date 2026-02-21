@@ -6,7 +6,7 @@ import {
   createSession,
   loadSession,
   findSessionByRepo,
-  createReview,
+  resumeSession,
   saveSession,
 } from './session.js';
 import { startReviewServer } from './server.js';
@@ -21,6 +21,7 @@ Start an interactive code review for uncommitted changes.
 
 Options:
   -s, --session-id <id>   Reuse an existing session
+  -m, --message <text>    Description of what changed (shown in review UI)
   -p, --port <number>     Use a specific port (default: random)
   --no-open               Don't open the browser automatically
   -h, --help              Show this help
@@ -29,6 +30,7 @@ Options:
 
 async function runReview(options: {
   'session-id'?: string;
+  message?: string;
   port?: string;
   'no-open'?: boolean;
 }): Promise<void> {
@@ -52,12 +54,18 @@ async function runReview(options: {
   let session;
   if (options['session-id']) {
     session = await loadSession(options['session-id']);
+    resumeSession(session, diff, files, options.message);
+    await saveSession(session);
   } else {
-    session = (await findSessionByRepo(repoPath)) ?? (await createSession(repoPath));
+    const existing = await findSessionByRepo(repoPath);
+    if (existing) {
+      session = existing;
+      resumeSession(session, diff, files, options.message);
+      await saveSession(session);
+    } else {
+      session = await createSession(repoPath, diff, files, options.message);
+    }
   }
-
-  const review = createReview(session, diff, files);
-  await saveSession(session);
 
   const webDistPath = await getWebDistPath();
   const port = options.port ? parseInt(options.port, 10) : 0;
@@ -66,7 +74,6 @@ async function runReview(options: {
 
   const server = await startReviewServer({
     session,
-    review,
     webDistPath,
     port,
   });
@@ -93,6 +100,7 @@ async function main(): Promise<void> {
     args: process.argv.slice(2),
     options: {
       'session-id': { type: 'string', short: 's' },
+      message: { type: 'string', short: 'm' },
       port: { type: 'string', short: 'p' },
       'no-open': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },

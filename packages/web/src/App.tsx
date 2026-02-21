@@ -16,7 +16,7 @@ function AppContent() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  if (!state.review) return <LoadingScreen />;
+  if (!state.session) return <LoadingScreen />;
   if (state.isSubmitted) return <SubmittedScreen />;
 
   return (

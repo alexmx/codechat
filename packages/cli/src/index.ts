@@ -1,6 +1,5 @@
 export type {
   Session,
-  Review,
   FileSummary,
   Comment,
   ReviewResult,

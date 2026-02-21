@@ -6,7 +6,6 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { z } from 'zod';
 import type {
   Session,
-  Review,
   Comment,
   ReviewResult,
   ReviewServer,
@@ -104,13 +103,17 @@ function broadcast(wss: WebSocketServer, msg: ServerMessage): void {
 
 interface ServerOptions {
   session: Session;
-  review: Review;
   webDistPath: string;
   port?: number;
+  timeout?: number;
 }
 
+const DEFAULT_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+// Grace period after all browser tabs close before auto-submitting the review
+const DISCONNECT_GRACE = 5_000;
+
 export async function startReviewServer(options: ServerOptions): Promise<ReviewServer> {
-  const { session, review, webDistPath, port = 0 } = options;
+  const { session, webDistPath, port = 0, timeout = DEFAULT_TIMEOUT } = options;
 
   return new Promise<ReviewServer>((resolveServer) => {
     let resolveResult: (result: ReviewResult) => void;
@@ -118,16 +121,67 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
       resolveResult = r;
     });
 
+    let submitted = false;
+    let disconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
     const httpServer = createServer(async (req, res) => {
       await serveStatic(webDistPath, req, res);
     });
 
     const wss = new WebSocketServer({ server: httpServer });
 
+    async function doSubmit(): Promise<void> {
+      if (submitted) return;
+      submitted = true;
+
+      const pendingComments = session.comments.filter((c) => !c.resolved);
+      const status = pendingComments.length > 0 ? 'changes_requested' : 'approved';
+      session.status = status;
+      await saveSession(session);
+
+      broadcast(wss, { type: 'review_complete' });
+
+      const result: ReviewResult = {
+        sessionId: session.id,
+        status,
+        comments: session.comments,
+      };
+
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (disconnectTimer) clearTimeout(disconnectTimer);
+
+      for (const client of wss.clients) {
+        client.close();
+      }
+      wss.close();
+
+      httpServer.closeAllConnections();
+      httpServer.close(() => resolveResult(result));
+    }
+
     wss.on('connection', (ws: WebSocket) => {
-      send(ws, { type: 'init', data: review });
+      // Cancel any pending disconnect timer (tab refresh / reconnect)
+      if (disconnectTimer) {
+        clearTimeout(disconnectTimer);
+        disconnectTimer = null;
+      }
+
+      send(ws, { type: 'init', data: session });
+
+      ws.on('close', () => {
+        if (submitted) return;
+        const activeClients = [...wss.clients].filter((c) => c.readyState === c.OPEN);
+        if (activeClients.length === 0) {
+          disconnectTimer = setTimeout(() => {
+            doSubmit().catch(() => {});
+          }, DISCONNECT_GRACE);
+        }
+      });
 
       ws.on('message', async (raw: Buffer) => {
+        if (submitted) return;
+
         let json: unknown;
         try {
           json = JSON.parse(raw.toString());
@@ -149,8 +203,9 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
               side,
               body,
               createdAt: new Date().toISOString(),
+              resolved: false,
             };
-            review.comments.push(comment);
+            session.comments.push(comment);
             await saveSession(session);
             broadcast(wss, { type: 'comment_added', data: comment });
             break;
@@ -158,34 +213,16 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
 
           case 'delete_comment': {
             const { id } = msg.data;
-            review.comments = review.comments.filter((c) => c.id !== id);
+            const comment = session.comments.find((c) => c.id === id);
+            if (!comment || comment.resolved) break;
+            session.comments = session.comments.filter((c) => c.id !== id);
             await saveSession(session);
             broadcast(wss, { type: 'comment_deleted', data: { id } });
             break;
           }
 
           case 'submit_review': {
-            const status = review.comments.length > 0 ? 'changes_requested' : 'approved';
-            review.status = status;
-            await saveSession(session);
-            broadcast(wss, { type: 'review_complete' });
-
-            const result: ReviewResult = {
-              sessionId: session.id,
-              reviewId: review.id,
-              status,
-              comments: review.comments,
-            };
-
-            // Close all WebSocket clients first
-            for (const client of wss.clients) {
-              client.close();
-            }
-            wss.close();
-
-            // Force-close all open sockets so httpServer.close() can complete
-            httpServer.closeAllConnections();
-            httpServer.close(() => resolveResult(result));
+            await doSubmit();
             break;
           }
         }
@@ -195,6 +232,12 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
     httpServer.listen(port, '127.0.0.1', () => {
       const addr = httpServer.address();
       const actualPort = typeof addr === 'object' && addr ? addr.port : port;
+
+      // Start the overall timeout
+      timeoutTimer = setTimeout(() => {
+        doSubmit().catch(() => {});
+      }, timeout);
+
       resolveServer({
         port: actualPort,
         url: `http://127.0.0.1:${actualPort}`,

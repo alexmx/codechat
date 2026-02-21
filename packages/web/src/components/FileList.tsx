@@ -95,14 +95,14 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
 
   const tree = useMemo(() => {
-    if (!state.review) return null;
-    return buildTree(state.review.files);
-  }, [state.review?.files]);
+    if (!state.session) return null;
+    return buildTree(state.session.files);
+  }, [state.session?.files]);
 
-  if (!state.review) return null;
+  if (!state.session) return null;
 
   const commentsByFile = new Map<string, number>();
-  for (const c of state.review.comments) {
+  for (const c of state.session.comments) {
     commentsByFile.set(c.filePath, (commentsByFile.get(c.filePath) ?? 0) + 1);
   }
 
@@ -157,7 +157,7 @@ export function FileList({ activeFile, onSelectFile }: FileListProps) {
 
       {viewMode === 'flat' ? (
         <FlatList
-          files={state.review.files}
+          files={state.session.files}
           commentsByFile={commentsByFile}
           activeFile={activeFile}
           onSelectFile={onSelectFile}

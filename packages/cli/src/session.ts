@@ -2,7 +2,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
-import type { Session, Review, FileSummary } from './types.js';
+import type { Session, FileSummary } from './types.js';
 
 function getDataDir(): string {
   const xdg = process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share');
@@ -17,21 +17,29 @@ function repoSessionPath(repoPath: string): string {
   return join(getDataDir(), `${repoHash(repoPath)}.json`);
 }
 
-export async function createSession(repoPath: string): Promise<Session> {
+export async function createSession(
+  repoPath: string,
+  diff: string,
+  files: FileSummary[],
+  message?: string,
+): Promise<Session> {
   const now = new Date().toISOString();
   const session: Session = {
     id: randomUUID(),
     repoPath,
     createdAt: now,
     updatedAt: now,
-    reviews: [],
+    status: 'pending',
+    diff,
+    files,
+    comments: [],
+    ...(message ? { message } : {}),
   };
   await saveSession(session);
   return session;
 }
 
 export async function loadSession(sessionId: string): Promise<Session> {
-  // Scan — only used when --session-id is explicitly provided (rare path)
   const dir = getDataDir();
   const entries = await readdir(dir);
   for (const entry of entries) {
@@ -57,22 +65,27 @@ export async function saveSession(session: Session): Promise<void> {
 export async function findSessionByRepo(repoPath: string): Promise<Session | null> {
   try {
     const data = await readFile(repoSessionPath(repoPath), 'utf-8');
-    return JSON.parse(data) as Session;
+    const session = JSON.parse(data) as Session;
+    return session;
   } catch {
     return null;
   }
 }
 
-export function createReview(session: Session, diff: string, files: FileSummary[]): Review {
-  const review: Review = {
-    id: randomUUID(),
-    sessionId: session.id,
-    createdAt: new Date().toISOString(),
-    status: 'pending',
-    diff,
-    files,
-    comments: [],
-  };
-  session.reviews.push(review);
-  return review;
+/** Resume an existing session with fresh changes, marking previous comments as resolved. */
+export function resumeSession(
+  session: Session,
+  diff: string,
+  files: FileSummary[],
+  message?: string,
+): void {
+  session.diff = diff;
+  session.files = files;
+  session.status = 'pending';
+  for (const comment of session.comments) {
+    comment.resolved = true;
+  }
+  if (message !== undefined) {
+    session.message = message;
+  }
 }

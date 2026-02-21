@@ -8,7 +8,7 @@ import {
   createSession,
   loadSession,
   findSessionByRepo,
-  createReview,
+  resumeSession,
   saveSession,
 } from './session.js';
 import { startReviewServer } from './server.js';
@@ -26,8 +26,9 @@ server.tool(
   {
     repoPath: z.string().describe('Absolute path to the git repository'),
     sessionId: z.string().optional().describe('Reuse an existing session ID'),
+    message: z.string().optional().describe('Description of what changed, shown to the reviewer'),
   },
-  async ({ repoPath, sessionId }) => {
+  async ({ repoPath, sessionId, message }) => {
     if (!(await isGitRepo(repoPath))) {
       return {
         content: [{ type: 'text' as const, text: 'Error: Not a git repository.' }],
@@ -50,6 +51,8 @@ server.tool(
     if (sessionId) {
       try {
         session = await loadSession(sessionId);
+        resumeSession(session, diff, files, message);
+        await saveSession(session);
       } catch {
         return {
           content: [{ type: 'text' as const, text: `Session not found: ${sessionId}` }],
@@ -57,14 +60,18 @@ server.tool(
         };
       }
     } else {
-      session = (await findSessionByRepo(canonicalPath)) ?? (await createSession(canonicalPath));
+      const existing = await findSessionByRepo(canonicalPath);
+      if (existing) {
+        session = existing;
+        resumeSession(session, diff, files, message);
+        await saveSession(session);
+      } else {
+        session = await createSession(canonicalPath, diff, files, message);
+      }
     }
 
-    const review = createReview(session, diff, files);
-    await saveSession(session);
-
     const webDistPath = await getWebDistPath();
-    const reviewServer = await startReviewServer({ session, review, webDistPath });
+    const reviewServer = await startReviewServer({ session, webDistPath });
 
     process.stderr.write(`CodeChat review: ${reviewServer.url}\n`);
 
@@ -80,7 +87,7 @@ server.tool(
 
 server.tool(
   'codechat_get_session',
-  'Retrieve the history of a code review session, including all reviews and comments.',
+  'Retrieve the current state of a code review session, including all comments.',
   {
     sessionId: z.string().describe('The session ID to retrieve'),
   },

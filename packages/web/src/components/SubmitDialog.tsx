@@ -6,7 +6,9 @@ interface SubmitDialogProps {
 
 export function SubmitDialog({ onClose }: SubmitDialogProps) {
   const { state, send } = useReview();
-  const commentCount = state.review?.comments.length ?? 0;
+  const comments = state.session?.comments ?? [];
+  const pendingCount = comments.filter((c) => !c.resolved).length;
+  const resolvedCount = comments.filter((c) => c.resolved).length;
 
   function submit() {
     send({ type: 'submit_review' });
@@ -31,9 +33,14 @@ export function SubmitDialog({ onClose }: SubmitDialogProps) {
         </div>
         <div className="px-4 py-4">
           <p className="mb-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            {commentCount > 0
-              ? `${commentCount} comment${commentCount !== 1 ? 's' : ''} will be sent back to the agent.`
-              : 'No comments — this will approve the changes.'}
+            {pendingCount > 0
+              ? `${pendingCount} new comment${pendingCount !== 1 ? 's' : ''} will be sent back to the agent.`
+              : 'No new comments — this will approve the changes.'}
+            {resolvedCount > 0 && (
+              <span style={{ color: 'var(--color-text-muted)' }}>
+                {' '}({resolvedCount} resolved from previous round{resolvedCount !== 1 ? 's' : ''})
+              </span>
+            )}
           </p>
           <button
             onClick={submit}

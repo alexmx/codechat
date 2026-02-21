@@ -1,22 +1,22 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react';
-import type { Review, Comment, ClientMessage, ServerMessage } from '../types';
+import type { Session, Comment, ClientMessage, ServerMessage } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
 
 interface ReviewState {
-  review: Review | null;
+  session: Session | null;
   isConnected: boolean;
   isSubmitted: boolean;
 }
 
 type ReviewAction =
-  | { type: 'INIT'; review: Review }
+  | { type: 'INIT'; session: Session }
   | { type: 'COMMENT_ADDED'; comment: Comment }
   | { type: 'COMMENT_DELETED'; id: string }
   | { type: 'REVIEW_COMPLETE' }
   | { type: 'CONNECTION_STATUS'; connected: boolean };
 
 const initialState: ReviewState = {
-  review: null,
+  session: null,
   isConnected: false,
   isSubmitted: false,
 };
@@ -24,23 +24,23 @@ const initialState: ReviewState = {
 function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
   switch (action.type) {
     case 'INIT':
-      return { ...state, review: action.review };
+      return { ...state, session: action.session };
     case 'COMMENT_ADDED':
-      if (!state.review) return state;
+      if (!state.session) return state;
       return {
         ...state,
-        review: {
-          ...state.review,
-          comments: [...state.review.comments, action.comment],
+        session: {
+          ...state.session,
+          comments: [...state.session.comments, action.comment],
         },
       };
     case 'COMMENT_DELETED':
-      if (!state.review) return state;
+      if (!state.session) return state;
       return {
         ...state,
-        review: {
-          ...state.review,
-          comments: state.review.comments.filter((c) => c.id !== action.id),
+        session: {
+          ...state.session,
+          comments: state.session.comments.filter((c) => c.id !== action.id),
         },
       };
     case 'REVIEW_COMPLETE':
@@ -65,7 +65,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   const handleMessage = useCallback((msg: ServerMessage) => {
     switch (msg.type) {
       case 'init':
-        dispatch({ type: 'INIT', review: msg.data });
+        dispatch({ type: 'INIT', session: msg.data });
         break;
       case 'comment_added':
         dispatch({ type: 'COMMENT_ADDED', comment: msg.data });
@@ -75,8 +75,6 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         break;
       case 'review_complete':
         dispatch({ type: 'REVIEW_COMPLETE' });
-        // Auto-close the window after a brief delay.
-        // Works in Chrome app mode; silently fails in regular tabs.
         setTimeout(() => window.close(), 500);
         break;
     }
