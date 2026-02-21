@@ -205,6 +205,15 @@
   border-bottom: 1px solid var(--color-border-default);
 }
 
+/* Align widget content with code area (skip gutter columns) */
+.diff-unified .diff-widget-content {
+  padding-left: 116px; /* 2 gutter columns (50px min-width + padding each) */
+}
+
+.diff-split .diff-widget-content {
+  padding-left: 66px; /* 1 gutter column */
+}
+
 /* Line hover — show plus icon via gutter hover above */
 
 /* Decoration / expand rows */

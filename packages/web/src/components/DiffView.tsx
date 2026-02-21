@@ -31,6 +31,7 @@ export function DiffView({ activeFile }: DiffViewProps) {
   const { state } = useReview();
   const [viewType, setViewType] = useState<'unified' | 'split'>('unified');
   const [showResolved, setShowResolved] = useState(true);
+  const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
 
   const files = useMemo(() => {
     if (!state.session) return [];
@@ -95,6 +96,8 @@ export function DiffView({ activeFile }: DiffViewProps) {
           (c) => c.filePath === filePath,
         );
 
+        const isCollapsed = collapsedFiles.has(filePath);
+
         return (
           <div
             key={filePath}
@@ -102,15 +105,29 @@ export function DiffView({ activeFile }: DiffViewProps) {
             className="mb-4"
           >
             {fileSummary && (
-              <FileHeader file={fileSummary} commentCount={fileComments.length} />
+              <FileHeader
+                file={fileSummary}
+                commentCount={fileComments.length}
+                isCollapsed={isCollapsed}
+                onToggle={() => {
+                  setCollapsedFiles((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(filePath)) next.delete(filePath);
+                    else next.add(filePath);
+                    return next;
+                  });
+                }}
+              />
             )}
-            <FileDiffSection
-              file={file}
-              filePath={filePath}
-              viewType={viewType}
-              comments={fileComments}
-              showResolved={showResolved}
-            />
+            {!isCollapsed && (
+              <FileDiffSection
+                file={file}
+                filePath={filePath}
+                viewType={viewType}
+                comments={fileComments}
+                showResolved={showResolved}
+              />
+            )}
           </div>
         );
       })}
