@@ -38,7 +38,6 @@ export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
 
       ws.onopen = () => {
         backoff = 1_000;
-        setStatus('connected');
       };
 
       ws.onclose = () => {
@@ -60,6 +59,7 @@ export function useWebSocket(onMessage: (msg: ServerMessage) => void) {
           if (msg.type === 'review_complete') done = true;
           if (msg.type === 'init') {
             initReceived = true;
+            setStatus('connected');
             onMessageRef.current(msg);
             flushQueue(ws);
           } else {

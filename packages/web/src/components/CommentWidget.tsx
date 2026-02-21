@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useReview } from '../context/ReviewContext';
-import type { Comment } from '../types';
+import { isLineRange, type Comment } from '../types';
 
 interface CommentWidgetProps {
   comments: Comment[];
@@ -101,7 +101,7 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
               )}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
-                  {comment.endLine && comment.endLine !== comment.line && (
+                  {isLineRange(comment) && (
                     <span
                       className="mb-1 inline-block rounded px-1.5 py-0.5 text-xs font-medium"
                       style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-text-muted)' }}

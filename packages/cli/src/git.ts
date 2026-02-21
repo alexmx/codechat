@@ -21,7 +21,7 @@ export async function getRepoRoot(cwd: string): Promise<string> {
   return stdout.trim();
 }
 
-export async function hasCommits(cwd: string): Promise<boolean> {
+async function hasCommits(cwd: string): Promise<boolean> {
   try {
     await exec('git', ['rev-parse', 'HEAD'], { cwd });
     return true;

@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useReview } from '../context/ReviewContext';
+import { isLineRange } from '../types';
 
 interface CommentFormProps {
   filePath: string;
@@ -42,7 +43,7 @@ export function CommentForm({ filePath, line, endLine, side, onCancel }: Comment
       className="my-2 rounded-md p-3"
       style={{ backgroundColor: 'var(--color-page-bg)', border: '1px solid var(--color-border-default)' }}
     >
-      {endLine && endLine !== line && (
+      {isLineRange({ line, endLine }) && (
         <div
           className="mb-2 text-xs font-medium"
           style={{ color: 'var(--color-text-muted)' }}

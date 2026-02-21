@@ -56,7 +56,11 @@ export async function loadSession(sessionId: string): Promise<Session> {
   const match = entries.find((e) => e.endsWith(`_${sessionId}.json`));
   if (!match) throw new Error(`Session not found: ${sessionId}`);
   const data = await readFile(join(dir, match), 'utf-8');
-  return JSON.parse(data) as Session;
+  try {
+    return JSON.parse(data) as Session;
+  } catch {
+    throw new Error(`Session file corrupted: ${sessionId}`);
+  }
 }
 
 export async function saveSession(session: Session): Promise<void> {
@@ -84,7 +88,8 @@ export async function findSessionByRepo(repoPath: string): Promise<Session | nul
   try {
     const data = await readFile(join(dir, match), 'utf-8');
     return JSON.parse(data) as Session;
-  } catch {
+  } catch (err) {
+    process.stderr.write(`Warning: could not read session file ${match}: ${err}\n`);
     return null;
   }
 }
@@ -105,12 +110,17 @@ async function removeRepoSessions(repoPath: string): Promise<void> {
   }
 }
 
+export interface ResolveSessionOptions {
+  message?: string;
+  replies?: { commentId: string; body: string; resolved?: boolean }[];
+}
+
 /** Resume an existing session with fresh changes, resolving only comments the agent replied to. */
 export function resumeSession(
   session: Session,
   diff: string,
   files: FileSummary[],
-  options?: { message?: string; replies?: { commentId: string; body: string; resolved?: boolean }[] },
+  options?: ResolveSessionOptions,
 ): void {
   session.diff = diff;
   session.files = files;
@@ -131,4 +141,36 @@ export function resumeSession(
   if (options?.message !== undefined) {
     session.message = options.message;
   }
+}
+
+/**
+ * Resolve or create a session for a given repo.
+ * - If sessionId is provided, loads that specific session and resumes it.
+ * - Otherwise, auto-discovers by repoPath:
+ *   - Resumes if the session is still pending or replies are provided.
+ *   - Creates a fresh session if the previous review was completed.
+ */
+export async function resolveSession(
+  repoPath: string,
+  diff: string,
+  files: FileSummary[],
+  options?: ResolveSessionOptions & { sessionId?: string },
+): Promise<Session> {
+  const { sessionId, ...resumeOpts } = options ?? {};
+
+  if (sessionId) {
+    const session = await loadSession(sessionId);
+    resumeSession(session, diff, files, resumeOpts);
+    await saveSession(session);
+    return session;
+  }
+
+  const existing = await findSessionByRepo(repoPath);
+  if (existing && (existing.status === 'pending' || resumeOpts.replies?.length)) {
+    resumeSession(existing, diff, files, resumeOpts);
+    await saveSession(existing);
+    return existing;
+  }
+
+  return createSession(repoPath, diff, files, resumeOpts.message);
 }

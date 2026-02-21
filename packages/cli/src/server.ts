@@ -190,7 +190,7 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
         const activeClients = [...wss.clients].filter((c) => c.readyState === c.OPEN);
         if (activeClients.length === 0) {
           disconnectTimer = setTimeout(() => {
-            doSubmit().catch(() => {});
+            doSubmit().catch((err) => process.stderr.write(`Submit error: ${err}\n`));
           }, DISCONNECT_GRACE);
         }
       });
@@ -255,14 +255,14 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
 
       // Start the overall timeout
       timeoutTimer = setTimeout(() => {
-        doSubmit().catch(() => {});
+        doSubmit().catch((err) => process.stderr.write(`Submit error: ${err}\n`));
       }, timeout);
 
       // Watch for file changes and update diff live
       try {
         fileWatcher = watch(session.repoPath, { recursive: true }, (_event, filename) => {
           if (submitted) return;
-          if (typeof filename === 'string' && (filename.includes('.git') || filename.includes('node_modules'))) return;
+          if (typeof filename === 'string' && (filename === '.git' || filename.startsWith('.git/') || filename.includes('/node_modules/') || filename.startsWith('node_modules/'))) return;
           if (watchDebounce) clearTimeout(watchDebounce);
           watchDebounce = setTimeout(async () => {
             try {

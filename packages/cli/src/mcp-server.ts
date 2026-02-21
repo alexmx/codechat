@@ -4,13 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { isGitRepo, getRepoRoot, getDiff, parseFileSummaries } from './git.js';
-import {
-  createSession,
-  loadSession,
-  findSessionByRepo,
-  resumeSession,
-  saveSession,
-} from './session.js';
+import { resolveSession, loadSession, saveSession } from './session.js';
 import { startReviewServer } from './server.js';
 import { getWebDistPath } from './paths.js';
 import type { ReviewResult } from './types.js';
@@ -39,7 +33,7 @@ Workflow:
 The session persists automatically by repository path — you do not need to pass sessionId on subsequent calls.`,
   {
     repoPath: z.string().describe('Absolute path to the git repository'),
-    sessionId: z.string().optional().describe('Explicit session ID override. Usually not needed — the session is auto-discovered by repoPath.'),
+    sessionId: z.string().optional().describe('Explicit session ID to resume. Usually not needed — sessions are auto-discovered by repoPath. Use this to resume a completed session if the user changes their mind.'),
     message: z.string().optional().describe('Short summary of what you changed since the last round, shown to the reviewer in the UI header'),
     replies: z.array(z.object({
       commentId: z.string().describe('The comment ID being addressed'),
@@ -68,26 +62,13 @@ The session persists automatically by repository path — you do not need to pas
     const files = parseFileSummaries(diff);
 
     let session;
-    if (sessionId) {
-      try {
-        session = await loadSession(sessionId);
-        resumeSession(session, diff, files, { message, replies });
-        await saveSession(session);
-      } catch {
-        return {
-          content: [{ type: 'text' as const, text: `Session not found: ${sessionId}` }],
-          isError: true,
-        };
-      }
-    } else {
-      const existing = await findSessionByRepo(canonicalPath);
-      if (existing) {
-        session = existing;
-        resumeSession(session, diff, files, { message, replies });
-        await saveSession(session);
-      } else {
-        session = await createSession(canonicalPath, diff, files, message);
-      }
+    try {
+      session = await resolveSession(canonicalPath, diff, files, { sessionId, message, replies });
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: `Session error: ${(err as Error).message}` }],
+        isError: true,
+      };
     }
 
     // If the agent explicitly opted into skipping the browser, return the result

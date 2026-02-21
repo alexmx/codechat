@@ -35,6 +35,8 @@ function AppContent() {
   const { state } = useReview();
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(288);
+  const sidebarWidthRef = useRef(sidebarWidth);
+  sidebarWidthRef.current = sidebarWidth;
   const draggingRef = useRef(false);
 
   const handleSelectFile = useCallback((path: string) => {
@@ -47,7 +49,7 @@ function AppContent() {
     e.preventDefault();
     draggingRef.current = true;
     const startX = e.clientX;
-    const startWidth = sidebarWidth;
+    const startWidth = sidebarWidthRef.current;
 
     function onMove(ev: MouseEvent) {
       const newWidth = Math.max(200, Math.min(600, startWidth + ev.clientX - startX));
@@ -66,7 +68,7 @@ function AppContent() {
     document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-  }, [sidebarWidth]);
+  }, []);
 
   if (!state.session) return <LoadingScreen />;
   if (state.isSubmitted) return <SubmittedScreen />;

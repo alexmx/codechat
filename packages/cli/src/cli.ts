@@ -2,13 +2,7 @@
 
 import { parseArgs } from 'node:util';
 import { isGitRepo, getRepoRoot, getDiff, parseFileSummaries } from './git.js';
-import {
-  createSession,
-  loadSession,
-  findSessionByRepo,
-  resumeSession,
-  saveSession,
-} from './session.js';
+import { resolveSession } from './session.js';
 import { startReviewServer } from './server.js';
 import { getWebDistPath } from './paths.js';
 import open from 'open';
@@ -53,21 +47,10 @@ async function runReview(options: {
 
   const files = parseFileSummaries(diff);
 
-  let session;
-  if (options['session-id']) {
-    session = await loadSession(options['session-id']);
-    resumeSession(session, diff, files, { message: options.message });
-    await saveSession(session);
-  } else {
-    const existing = await findSessionByRepo(repoPath);
-    if (existing) {
-      session = existing;
-      resumeSession(session, diff, files, { message: options.message });
-      await saveSession(session);
-    } else {
-      session = await createSession(repoPath, diff, files, options.message);
-    }
-  }
+  const session = await resolveSession(repoPath, diff, files, {
+    sessionId: options['session-id'],
+    message: options.message,
+  });
 
   const webDistPath = await getWebDistPath();
   const port = options.port ? parseInt(options.port, 10) : 0;
