@@ -2,19 +2,12 @@
 
 **Human-in-the-loop code review for AI agents.**
 
-```
-codechat
-```
-
 Review your AI agent's code changes like a pull request — but locally. CodeChat opens a browser UI where you review the diff, leave inline comments, and submit. The agent reads your comments, makes fixes, and replies — a tight feedback loop that keeps you in control without breaking the agent's flow.
 
-```
-codechat_review  →  (user comments)  →  agent fixes  →  codechat_reply
-                          ↑                                     │
-                          └──── codechat_review ←───────────────┘
-                                (if another round needed)
-```
-
+<p align="center">
+<img width="900" alt="Screenshot 2026-02-22 at 21 41 44" src="https://github.com/user-attachments/assets/daca68cf-70f8-4ae5-9902-7f102b722f0a" />
+<p/>
+ 
 ## Features
 
 - **Browser-based review UI** — Syntax-highlighted diffs with inline commenting, dark/light theme
@@ -51,17 +44,6 @@ Or in `mise.toml` for a project-scoped install:
 ```
 
 ## Quick Start
-
-### Manual review
-
-```bash
-cd your-repo
-codechat
-```
-
-Opens a browser with your uncommitted changes. Add comments on any line, submit when done.
-
-### With an AI agent
 
 1. Set up the MCP server:
 
@@ -157,4 +139,4 @@ Each reply in the array:
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
