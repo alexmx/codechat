@@ -27,6 +27,7 @@ export async function createSession(
   repoPath: string,
   diff: string,
   files: FileSummary[],
+  description?: string,
 ): Promise<Session> {
   const now = new Date().toISOString();
   const session: Session = {
@@ -38,6 +39,7 @@ export async function createSession(
     diff,
     files,
     comments: [],
+    ...(description ? { description } : {}),
   };
   await saveSession(session);
   pruneExpiredSessions();
@@ -101,6 +103,26 @@ export async function findSessionByRepo(repoPath: string): Promise<Session | nul
   return latest;
 }
 
+export async function listSessionsByRepo(repoPath: string): Promise<Session[]> {
+  const dir = getDataDir();
+  const prefix = repoHash(repoPath) + '_';
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return [];
+  }
+  const matches = entries.filter((e) => e.startsWith(prefix) && e.endsWith('.json'));
+  const sessions: Session[] = [];
+  for (const match of matches) {
+    try {
+      const data = await readFile(join(dir, match), 'utf-8');
+      sessions.push(JSON.parse(data) as Session);
+    } catch { /* skip corrupted */ }
+  }
+  return sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
 /** Fire-and-forget cleanup of sessions older than 30 days. */
 function pruneExpiredSessions(): void {
   const dir = getDataDir();
@@ -117,6 +139,7 @@ function pruneExpiredSessions(): void {
 }
 
 export interface ResolveSessionOptions {
+  description?: string;
   replies?: { commentId: string; body: string; resolved?: boolean }[];
 }
 
@@ -173,5 +196,5 @@ export async function resolveSession(
     return existing;
   }
 
-  return createSession(repoPath, diff, files);
+  return createSession(repoPath, diff, files, resumeOpts.description);
 }

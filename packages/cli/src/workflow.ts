@@ -1,5 +1,5 @@
 import { isGitRepo, getRepoRoot, getDiff, parseFileSummaries } from './git.js';
-import { resolveSession, loadSession, saveSession } from './session.js';
+import { resolveSession, loadSession, saveSession, listSessionsByRepo } from './session.js';
 import { startReviewServer } from './server.js';
 import { getWebDistPath } from './paths.js';
 import type { ReviewResult, Session } from './types.js';
@@ -15,6 +15,7 @@ export class WorkflowError extends Error {
 export interface ReviewOptions {
   repoPath: string;
   sessionId?: string;
+  description?: string;
   replies?: { commentId: string; body: string; resolved?: boolean }[];
   skipReview?: boolean;
   port?: number;
@@ -47,6 +48,7 @@ export async function executeReview(options: ReviewOptions): Promise<ReviewOutco
   try {
     session = await resolveSession(canonicalPath, diff, files, {
       sessionId: options.sessionId,
+      description: options.description,
       replies: options.replies,
     });
   } catch (err) {
@@ -84,6 +86,14 @@ export async function executeReview(options: ReviewOptions): Promise<ReviewOutco
 
   const result = await reviewServer.result;
   return { kind: 'reviewed', result, url: reviewServer.url };
+}
+
+export async function listSessions(repoPath: string): Promise<Session[]> {
+  if (!(await isGitRepo(repoPath))) {
+    throw new WorkflowError('Not a git repository.');
+  }
+  const canonicalPath = await getRepoRoot(repoPath);
+  return listSessionsByRepo(canonicalPath);
 }
 
 export async function getSessionById(sessionId: string): Promise<Session> {

@@ -72,43 +72,47 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
             </button>
           ) : (
             <div className="px-4 py-3">
-              {comment.resolved && (
-                <button
-                  onClick={() => toggleCollapse(comment.id)}
-                  className="mb-1 flex items-center gap-1"
-                >
-                  <svg
-                    width="16" height="16" viewBox="0 0 16 16" fill="currentColor"
-                    style={{ color: 'var(--color-text-muted)', transition: 'transform 0.15s' }}
-                  >
-                    <path d="M4.427 7.427l3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
-                  </svg>
-                  <span
-                    className="rounded px-1.5 py-0.5 text-xs font-medium"
-                    style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-text-muted)' }}
-                  >
-                    Resolved
-                  </span>
-                </button>
-              )}
-              {!comment.resolved && comment.agentReply && (
-                <span
-                  className="mb-1 inline-block rounded px-1.5 py-0.5 text-xs font-medium"
-                  style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-info)' }}
-                >
-                  Replied
-                </span>
-              )}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
+              {(comment.resolved || (!comment.resolved && comment.agentReply) || isLineRange(comment)) && (
+                <div className="mb-1 flex items-center gap-1.5">
+                  {comment.resolved && (
+                    <button
+                      onClick={() => toggleCollapse(comment.id)}
+                      className="flex items-center gap-1"
+                    >
+                      <svg
+                        width="16" height="16" viewBox="0 0 16 16" fill="currentColor"
+                        style={{ color: 'var(--color-text-muted)', transition: 'transform 0.15s' }}
+                      >
+                        <path d="M4.427 7.427l3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
+                      </svg>
+                      <span
+                        className="rounded px-1.5 py-0.5 text-xs font-medium"
+                        style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-text-muted)' }}
+                      >
+                        Resolved
+                      </span>
+                    </button>
+                  )}
+                  {!comment.resolved && comment.agentReply && (
+                    <span
+                      className="rounded px-1.5 py-0.5 text-xs font-medium"
+                      style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-info)' }}
+                    >
+                      Replied
+                    </span>
+                  )}
                   {isLineRange(comment) && (
                     <span
-                      className="mb-1 inline-block rounded px-1.5 py-0.5 text-xs font-medium"
+                      className="rounded px-1.5 py-0.5 text-xs font-medium"
                       style={{ backgroundColor: 'var(--color-elevated-bg)', color: 'var(--color-text-muted)' }}
                     >
                       Lines {comment.line}&ndash;{comment.endLine}
                     </span>
                   )}
+                </div>
+              )}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
                   <p
                     className="whitespace-pre-wrap text-sm"
                     style={{ color: 'var(--color-text-primary)' }}

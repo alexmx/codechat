@@ -23,13 +23,13 @@ export function SubmitDialog({ onClose }: SubmitDialogProps) {
 
   return (
     <div
-      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center"
+      className="animate-fade-in fixed inset-0 z-50"
       style={{ backgroundColor: 'var(--color-overlay-bg)' }}
       onClick={onClose}
     >
       <div
-        className="animate-scale-in w-full max-w-md rounded-lg p-0"
-        style={{ backgroundColor: 'var(--color-page-bg)', border: '1px solid var(--color-border-default)' }}
+        className="animate-slide-down absolute right-4 top-14 w-full max-w-md rounded-lg p-0"
+        style={{ backgroundColor: 'var(--color-page-bg)', border: '1px solid var(--color-border-default)', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border-separator)' }}>

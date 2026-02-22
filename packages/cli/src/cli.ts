@@ -2,64 +2,39 @@
 
 import { parseArgs } from 'node:util';
 import { version } from './version.js';
-import { executeReview, getSessionById, WorkflowError } from './workflow.js';
+import { executeReview, getSessionById, listSessions, WorkflowError } from './workflow.js';
 
 function printUsage(): void {
   console.error(`
-Usage: codechat <command> [options]
+Usage: codechat [options]
+       codechat sessions [<id>]
+       codechat mcp
 
-Commands:
-  review        Start an interactive code review (default)
-  get-session   Retrieve a session by ID
-  mcp           Start MCP server over stdio
-
-Review options:
-  -s, --session-id <id>     Reuse an existing session
-  -r, --replies <json|->    JSON array of replies (use - for stdin)
-  --skip-review             Return result without opening browser
-  -p, --port <number>       Use a specific port (default: random)
-  -t, --timeout <minutes>   Session timeout in minutes (default: 30)
-  --no-open                 Don't open the browser automatically
-  -v, --version             Show version
-  -h, --help                Show this help
+Options:
+  -s, --session <id>         Resume a session
+  -d, --description <text>   Describe the changes
+  -p, --port <n>             Server port
+  -t, --timeout <min>        Session timeout (default: 30)
+  --no-open                  Don't open browser
+  -v, --version              Show version
+  -h, --help                 Show this help
 `);
 }
 
-async function readStdin(): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks).toString('utf-8');
-}
-
 async function runReview(options: {
-  'session-id'?: string;
-  replies?: string;
-  'skip-review'?: boolean;
+  session?: string;
+  description?: string;
   port?: string;
   timeout?: string;
   'no-open'?: boolean;
 }): Promise<void> {
-  let replies;
-  if (options.replies) {
-    const raw = options.replies === '-' ? await readStdin() : options.replies;
-    try {
-      replies = JSON.parse(raw);
-    } catch {
-      console.error('Error: --replies must be valid JSON.');
-      process.exit(1);
-    }
-  }
-
   const outcome = await executeReview({
     repoPath: process.cwd(),
-    sessionId: options['session-id'],
-    replies,
-    skipReview: options['skip-review'],
+    sessionId: options.session,
+    description: options.description,
     port: options.port ? parseInt(options.port, 10) : undefined,
     timeout: options.timeout ? parseInt(options.timeout, 10) * 60_000 : undefined,
-    openBrowser: !options['no-open'] && !options['skip-review'],
+    openBrowser: !options['no-open'],
   });
 
   switch (outcome.kind) {
@@ -74,9 +49,28 @@ async function runReview(options: {
   }
 }
 
-async function runGetSession(sessionId: string): Promise<void> {
-  const session = await getSessionById(sessionId);
-  console.log(JSON.stringify(session, null, 2));
+async function runSessions(sessionId?: string): Promise<void> {
+  if (sessionId) {
+    const session = await getSessionById(sessionId);
+    console.log(JSON.stringify(session, null, 2));
+    return;
+  }
+
+  const sessions = await listSessions(process.cwd());
+  if (sessions.length === 0) {
+    console.error('No sessions found for this repository.');
+    return;
+  }
+  for (const s of sessions) {
+    const date = new Date(s.updatedAt).toLocaleString();
+    const comments = s.comments.length;
+    const pending = s.comments.filter((c) => !c.resolved).length;
+    const desc = s.description ? `  ${s.description}` : '';
+    const commentInfo = comments > 0
+      ? ` (${comments} comment${comments !== 1 ? 's' : ''}${pending > 0 ? `, ${pending} pending` : ''})`
+      : '';
+    console.log(`${s.id}  ${s.status.padEnd(17)}  ${date}${commentInfo}${desc}`);
+  }
 }
 
 async function runMcp(): Promise<void> {
@@ -93,9 +87,8 @@ async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2),
     options: {
-      'session-id': { type: 'string', short: 's' },
-      replies: { type: 'string', short: 'r' },
-      'skip-review': { type: 'boolean' },
+      session: { type: 'string', short: 's' },
+      description: { type: 'string', short: 'd' },
       port: { type: 'string', short: 'p' },
       timeout: { type: 'string', short: 't' },
       'no-open': { type: 'boolean' },
@@ -105,29 +98,24 @@ async function main(): Promise<void> {
     allowPositionals: true,
   });
 
-  const command = positionals[0] ?? 'review';
+  const command = positionals[0];
 
   if (values.version) {
     console.log(version);
     process.exit(0);
   }
 
-  if (values.help || command === 'help') {
+  if (values.help) {
     printUsage();
     process.exit(0);
   }
 
-  if (command === 'review') {
-    await runReview(values);
-  } else if (command === 'get-session') {
-    const sessionId = positionals[1] || values['session-id'];
-    if (!sessionId) {
-      console.error('Usage: codechat get-session <session-id>');
-      process.exit(1);
-    }
-    await runGetSession(sessionId);
+  if (command === 'sessions') {
+    await runSessions(positionals[1]);
   } else if (command === 'mcp') {
     await runMcp();
+  } else if (!command) {
+    await runReview(values);
   } else {
     console.error(`Unknown command: ${command}`);
     process.exit(1);

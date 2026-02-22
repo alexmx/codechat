@@ -70,7 +70,7 @@ export function ReviewHeader() {
         <div className="flex items-center gap-3">
           {!state.isSubmitted && (
             <span
-              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs"
+              className="group relative flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs"
               style={{
                 border: '1px solid var(--color-border-default)',
                 color: state.isConnected ? 'var(--color-success)' : 'var(--color-warning)',
@@ -84,6 +84,19 @@ export function ReviewHeader() {
                 }}
               />
               {state.isConnected ? 'Agent connected' : 'Reconnecting...'}
+              {session.description && (
+                <span
+                  className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-normal group-hover:block"
+                  style={{
+                    backgroundColor: 'var(--color-elevated-bg)',
+                    color: 'var(--color-text-secondary)',
+                    border: '1px solid var(--color-border-default)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  {session.description}
+                </span>
+              )}
             </span>
           )}
           <button
