@@ -8,7 +8,7 @@ function printUsage(): void {
   console.error(`
 Usage: codechat [options]
        codechat sessions [<id>]
-       codechat mcp
+       codechat mcp [--setup]
 
 Options:
   -s, --session <id>         Resume a session
@@ -19,6 +19,15 @@ Options:
   -v, --version              Show version
   -h, --help                 Show this help
 `);
+}
+
+function printMcpSetup(): void {
+  console.log(`Add codechat as an MCP server to your AI coding agent:
+
+  Claude Code:          claude mcp add --transport stdio codechat -- codechat mcp
+  Codex CLI:            codex mcp add codechat -- codechat mcp
+  VS Code / Copilot:    code --add-mcp '{"name":"codechat","command":"codechat","args":["mcp"]}'
+  Cursor:               cursor --add-mcp '{"name":"codechat","command":"codechat","args":["mcp"]}'`);
 }
 
 async function runReview(options: {
@@ -92,6 +101,7 @@ async function main(): Promise<void> {
       port: { type: 'string', short: 'p' },
       timeout: { type: 'string', short: 't' },
       'no-open': { type: 'boolean' },
+      setup: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
     },
@@ -113,6 +123,10 @@ async function main(): Promise<void> {
   if (command === 'sessions') {
     await runSessions(positionals[1]);
   } else if (command === 'mcp') {
+    if (values.setup) {
+      printMcpSetup();
+      process.exit(0);
+    }
     await runMcp();
   } else if (!command) {
     await runReview(values);
