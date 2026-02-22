@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useReview } from '../context/ReviewContext';
 import { isLineRange, type Comment } from '../types';
 
@@ -10,6 +10,32 @@ interface CommentWidgetProps {
 export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
   const { send } = useReview();
   const [manualToggle, setManualToggle] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState('');
+  const editRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editingId && editRef.current) {
+      editRef.current.focus();
+      editRef.current.setSelectionRange(editRef.current.value.length, editRef.current.value.length);
+    }
+  }, [editingId]);
+
+  function handleEdit(comment: Comment) {
+    setEditingId(comment.id);
+    setEditBody(comment.body);
+  }
+
+  function handleEditSave(id: string) {
+    const trimmed = editBody.trim();
+    if (!trimmed) return;
+    send({ type: 'edit_comment', data: { id, body: trimmed } });
+    setEditingId(null);
+  }
+
+  function handleEditCancel() {
+    setEditingId(null);
+  }
 
   function handleDelete(id: string) {
     send({ type: 'delete_comment', data: { id } });
@@ -111,30 +137,85 @@ export function CommentWidget({ comments, onReply }: CommentWidgetProps) {
                   )}
                 </div>
               )}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <p
-                    className="whitespace-pre-wrap text-sm"
-                    style={{ color: 'var(--color-text-primary)' }}
-                  >
-                    {comment.body}
-                  </p>
+              {editingId === comment.id ? (
+                <div>
+                  <textarea
+                    ref={editRef}
+                    value={editBody}
+                    onChange={(e) => setEditBody(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        handleEditSave(comment.id);
+                      }
+                      if (e.key === 'Escape') handleEditCancel();
+                    }}
+                    className="w-full rounded border px-2 py-1.5 text-sm"
+                    style={{
+                      backgroundColor: 'var(--color-surface-bg)',
+                      borderColor: 'var(--color-border-default)',
+                      color: 'var(--color-text-primary)',
+                      resize: 'vertical',
+                    }}
+                    rows={3}
+                  />
+                  <div className="mt-1.5 flex gap-2">
+                    <button
+                      onClick={() => handleEditSave(comment.id)}
+                      className="rounded px-2 py-0.5 text-xs font-medium"
+                      style={{ backgroundColor: 'var(--color-link)', color: 'white' }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleEditCancel}
+                      className="text-xs"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                {!comment.resolved && !comment.agentReply && (
-                  <button
-                    onClick={() => handleDelete(comment.id)}
-                    className="shrink-0 rounded p-1"
-                    style={{ color: 'var(--color-text-muted)' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
-                    title="Delete comment"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.15l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z" />
-                    </svg>
-                  </button>
-                )}
-              </div>
+              ) : (
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <p
+                      className="whitespace-pre-wrap text-sm"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {comment.body}
+                    </p>
+                  </div>
+                  {!comment.resolved && !comment.agentReply && (
+                    <div className="flex shrink-0 gap-0.5">
+                      <button
+                        onClick={() => handleEdit(comment)}
+                        className="rounded p-1"
+                        style={{ color: 'var(--color-text-muted)' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-link)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                        title="Edit comment"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(comment.id)}
+                        className="rounded p-1"
+                        style={{ color: 'var(--color-text-muted)' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                        title="Delete comment"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.15l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
                 {new Date(comment.createdAt).toLocaleTimeString()}
               </div>

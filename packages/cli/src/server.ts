@@ -26,6 +26,11 @@ const AddCommentSchema = z.object({
   }),
 });
 
+const EditCommentSchema = z.object({
+  type: z.literal('edit_comment'),
+  data: z.object({ id: z.string(), body: z.string().min(1) }),
+});
+
 const DeleteCommentSchema = z.object({
   type: z.literal('delete_comment'),
   data: z.object({ id: z.string() }),
@@ -40,6 +45,7 @@ const SubmitReviewSchema = z.object({
 
 const ClientMessageSchema = z.discriminatedUnion('type', [
   AddCommentSchema,
+  EditCommentSchema,
   DeleteCommentSchema,
   SubmitReviewSchema,
 ]);
@@ -225,6 +231,16 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
             session.comments.push(comment);
             await saveSession(session);
             broadcast(wss, { type: 'comment_added', data: comment });
+            break;
+          }
+
+          case 'edit_comment': {
+            const { id, body } = msg.data;
+            const comment = session.comments.find((c) => c.id === id);
+            if (!comment || comment.resolved) break;
+            comment.body = body;
+            await saveSession(session);
+            broadcast(wss, { type: 'comment_edited', data: { id, body } });
             break;
           }
 

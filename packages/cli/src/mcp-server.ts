@@ -23,18 +23,20 @@ Workflow:
 
 Proactively offer a review when you've made significant code changes and want the user to verify before proceeding — don't wait to be asked.
 
-The session persists automatically by repository path — you do not need to pass sessionId on subsequent calls.`,
+Sessions are automatically resumed by repository path — calling this again on the same repo continues the existing session with all previous comments and replies preserved. Do not pass sessionId unless you need to resume a different session.`,
     {
       repoPath: z.string().describe('Absolute path to the git repository'),
-      sessionId: z.string().optional().describe('Session ID to resume. Usually not needed — sessions are auto-discovered by repoPath.'),
+      sessionId: z.string().optional().describe('Session ID to resume a specific past session. Usually not needed — sessions are auto-discovered by repoPath.'),
       description: z.string().optional().describe('Brief description of the changes (e.g. "Add user authentication"). Stored with the session.'),
+      newSession: z.boolean().optional().describe('Force a fresh session instead of resuming the existing one. Only use when the user explicitly asks to start over.'),
     },
-    async ({ repoPath, sessionId, description }) => {
+    async ({ repoPath, sessionId, description, newSession }) => {
       try {
         const outcome = await executeReview({
           repoPath,
           sessionId,
           description,
+          newSession,
           openBrowser: true,
         });
 

@@ -57,5 +57,5 @@ If `status` is `"changes_requested"` after replying, ask the user if they'd like
 
 - **Proactively offer a review** when you've made significant code changes — don't wait to be asked.
 - **Always summarize comments** before making changes. The user needs to know you understood their feedback.
-- **Sessions auto-resume** by repository path. You don't need to track session IDs.
+- **Always resume the existing session** — calling `codechat_review` or running `codechat` on the same repo automatically continues the current session with all previous comments and replies preserved. Never pass a new description or omit the repo path hoping to start fresh.
 - **Don't call `codechat_review` just to submit replies** — use `codechat_reply` (MCP) or note your changes and run `codechat` again for a new round (CLI).

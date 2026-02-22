@@ -20,6 +20,7 @@ interface ReviewState {
 type ReviewAction =
   | { type: 'INIT'; session: Session }
   | { type: 'COMMENT_ADDED'; comment: Comment }
+  | { type: 'COMMENT_EDITED'; id: string; body: string }
   | { type: 'COMMENT_DELETED'; id: string }
   | { type: 'DIFF_UPDATED'; diff: string; files: FileSummary[] }
   | { type: 'REVIEW_COMPLETE' }
@@ -47,6 +48,17 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
         session: {
           ...state.session,
           comments: [...state.session.comments, action.comment],
+        },
+      };
+    case 'COMMENT_EDITED':
+      if (!state.session) return state;
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          comments: state.session.comments.map((c) =>
+            c.id === action.id ? { ...c, body: action.body } : c
+          ),
         },
       };
     case 'COMMENT_DELETED':
@@ -116,6 +128,9 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         break;
       case 'comment_added':
         dispatch({ type: 'COMMENT_ADDED', comment: msg.data });
+        break;
+      case 'comment_edited':
+        dispatch({ type: 'COMMENT_EDITED', id: msg.data.id, body: msg.data.body });
         break;
       case 'comment_deleted':
         dispatch({ type: 'COMMENT_DELETED', id: msg.data.id });

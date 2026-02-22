@@ -18,6 +18,8 @@ export interface ReviewOptions {
   description?: string;
   replies?: { commentId: string; body: string; resolved?: boolean }[];
   skipReview?: boolean;
+  /** Force creation of a new session instead of resuming */
+  newSession?: boolean;
   port?: number;
   /** Session timeout in milliseconds */
   timeout?: number;
@@ -50,6 +52,7 @@ export async function executeReview(options: ReviewOptions): Promise<ReviewOutco
       sessionId: options.sessionId,
       description: options.description,
       replies: options.replies,
+      newSession: options.newSession,
     });
   } catch (err) {
     throw new WorkflowError((err as Error).message);

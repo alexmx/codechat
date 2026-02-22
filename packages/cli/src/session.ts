@@ -169,18 +169,23 @@ export function resumeSession(
 
 /**
  * Resolve or create a session for a given repo.
+ * - If newSession is true, always creates a fresh session.
  * - If sessionId is provided, loads that specific session and resumes it.
  * - Otherwise, auto-discovers by repoPath:
- *   - Resumes if the session is still pending or replies are provided.
- *   - Creates a fresh session if the previous review was completed.
+ *   - Resumes the most recent session if one exists (regardless of status).
+ *   - Creates a fresh session only if no session exists for this repo.
  */
 export async function resolveSession(
   repoPath: string,
   diff: string,
   files: FileSummary[],
-  options?: ResolveSessionOptions & { sessionId?: string },
+  options?: ResolveSessionOptions & { sessionId?: string; newSession?: boolean },
 ): Promise<Session> {
-  const { sessionId, ...resumeOpts } = options ?? {};
+  const { sessionId, newSession, ...resumeOpts } = options ?? {};
+
+  if (newSession) {
+    return createSession(repoPath, diff, files, resumeOpts.description);
+  }
 
   if (sessionId) {
     const session = await loadSession(sessionId);
@@ -190,7 +195,7 @@ export async function resolveSession(
   }
 
   const existing = await findSessionByRepo(repoPath);
-  if (existing && (existing.status === 'pending' || resumeOpts.replies?.length)) {
+  if (existing) {
     resumeSession(existing, diff, files, resumeOpts);
     await saveSession(existing);
     return existing;

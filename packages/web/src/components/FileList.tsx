@@ -287,6 +287,7 @@ function TreeNodeRow({
         commentCount={commentsByFile.get(node.file.path) ?? 0}
         isActive={activeFile === node.file.path}
         onSelect={onSelectFile}
+        treeIndent
       />
     );
   }
@@ -355,16 +356,18 @@ interface FileRowProps {
   commentCount: number;
   isActive: boolean;
   onSelect: (path: string) => void;
+  /** Add left offset to align status icon with parent folder icon in tree view */
+  treeIndent?: boolean;
 }
 
-function FileRow({ file, label, depth, commentCount, isActive, onSelect }: FileRowProps) {
+function FileRow({ file, label, depth, commentCount, isActive, onSelect, treeIndent }: FileRowProps) {
   return (
     <li>
       <button
         onClick={() => onSelect(file.path)}
         className="flex w-full items-center gap-2 py-1.5 text-left text-sm focus:outline-none"
         style={{
-          paddingLeft: `${depth * 12 + 16}px`,
+          paddingLeft: `${depth * 12 + 16 + (treeIndent ? 22 : 0)}px`,
           paddingRight: '16px',
           backgroundColor: isActive ? 'var(--color-surface-bg)' : 'transparent',
           color: 'var(--color-text-primary)',
