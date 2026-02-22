@@ -14,7 +14,14 @@ export async function startMcpServer(): Promise<void> {
     'codechat_review',
     `Open a browser UI for the user to review uncommitted changes and leave inline comments. Blocks until the user submits. Returns a ReviewResult JSON with { sessionId, status, comments }.
 
-When the result comes back, summarize each unresolved comment (file, line, what the reviewer said) and state your plan for each. Skip already-resolved comments. After making fixes, call codechat_reply to record your responses.
+Workflow:
+1. When the result comes back, summarize each unresolved comment (file, line, what the reviewer said) and state your plan for each. Skip already-resolved comments.
+2. Make the fixes.
+3. Call codechat_reply to record your responses.
+4. If status is "changes_requested" after replying, ask the user if they'd like another review round — then call codechat_review again.
+5. Repeat until status is "approved".
+
+Proactively offer a review when you've made significant code changes and want the user to verify before proceeding — don't wait to be asked.
 
 The session persists automatically by repository path — you do not need to pass sessionId on subsequent calls.`,
     {
@@ -49,9 +56,9 @@ The session persists automatically by repository path — you do not need to pas
 
   server.tool(
     'codechat_reply',
-    `Record replies to review comments after making fixes. Returns immediately with the updated ReviewResult. Use this after codechat_review — do not call codechat_review again just to submit replies.
+    `Record replies to review comments after making fixes. Returns immediately with the updated ReviewResult.
 
-Set resolved to false on a reply to ask the user a clarifying question instead of marking it fixed.`,
+Always call this after making fixes — do not call codechat_review again just to submit replies. Set resolved to false on a reply when you have a clarifying question instead of a fix.`,
     {
       repoPath: z.string().describe('Absolute path to the git repository'),
       replies: z.array(z.object({
