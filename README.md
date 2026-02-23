@@ -47,17 +47,17 @@ Or in `mise.toml` for a project-scoped install:
 
 1. Set up the MCP server:
 
+**Claude Code (plugin):**
+
+```bash
+/plugin marketplace add alexmx/claude-tools
+/plugin install codechat@alexmx-tools
+```
+
+**Other agents:**
+
 ```bash
 codechat mcp --setup
-```
-
-```
-Add codechat as an MCP server to your AI coding agent:
-
-  Claude Code:          claude mcp add --transport stdio codechat -- codechat mcp
-  Codex CLI:            codex mcp add codechat -- codechat mcp
-  VS Code / Copilot:    code --add-mcp '{"name":"codechat","command":"codechat","args":["mcp"]}'
-  Cursor:               cursor --add-mcp '{"name":"codechat","command":"codechat","args":["mcp"]}'
 ```
 
 2. Ask the agent to review its changes. It calls `codechat_review`, you see:
