@@ -1,0 +1,12 @@
+{
+  "name": "codechat",
+  "description": "Human-in-the-loop code review for AI agents",
+  "version": "1.0.0",
+  "author": {
+    "name": "alexmx"
+  },
+  "homepage": "https://github.com/alexmx/codechat",
+  "repository": "https://github.com/alexmx/codechat",
+  "license": "MIT",
+  "keywords": ["code-review", "ai-agents", "mcp"]
+}

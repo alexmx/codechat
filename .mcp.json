@@ -1,0 +1,6 @@
+{
+  "codechat": {
+    "command": "codechat",
+    "args": ["mcp"]
+  }
+}
