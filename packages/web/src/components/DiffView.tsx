@@ -91,7 +91,7 @@ export function DiffView({ activeFile }: DiffViewProps) {
       </div>
 
       {files.map((file) => {
-        const filePath = file.newPath || file.oldPath || '';
+        const filePath = (file.newPath && file.newPath !== '/dev/null') ? file.newPath : file.oldPath || '';
         const fileSummary = state.session!.files.find((f) => f.path === filePath);
         const fileComments = state.session!.comments.filter(
           (c) => c.filePath === filePath,

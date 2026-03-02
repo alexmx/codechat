@@ -33,7 +33,7 @@ export function FileHeader({ file, commentCount, isCollapsed, isActive, onToggle
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-surface-bg)')}
     >
       <svg
-        width="16" height="16" viewBox="0 0 16 16" fill="currentColor"
+        width="18" height="18" viewBox="0 0 16 16" fill="currentColor"
         className="shrink-0"
         style={{
           color: 'var(--color-text-muted)',
