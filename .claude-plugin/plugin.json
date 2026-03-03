@@ -1,7 +1,7 @@
 {
   "name": "codechat",
   "description": "Human-in-the-loop code review for AI agents",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "alexmx"
   },
