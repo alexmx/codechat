@@ -32,7 +32,7 @@ export interface Comment {
 
 export interface ReviewResult {
   sessionId: string;
-  status: 'approved' | 'changes_requested';
+  status: 'pending' | 'approved' | 'changes_requested';
   comments: Comment[];
   summary?: string;
 }

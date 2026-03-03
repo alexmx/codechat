@@ -59,8 +59,6 @@ export async function executeReview(options: ReviewOptions): Promise<ReviewOutco
   }
 
   if (options.skipReview) {
-    const pendingComments = session.comments.filter((c) => !c.resolved);
-    session.status = pendingComments.length > 0 ? 'changes_requested' : 'approved';
     await saveSession(session);
     const result: ReviewResult = {
       sessionId: session.id,
