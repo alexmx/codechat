@@ -24,6 +24,6 @@ export async function getWebDistPath(): Promise<string> {
   }
 
   throw new Error(
-    'Could not find web UI assets. Run "pnpm build" in packages/web first.',
+    `Could not find web UI assets. Searched:\n  - ${devPath}\n  - ${bundledPath}\nRun "pnpm build" in packages/web first.`,
   );
 }
