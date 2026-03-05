@@ -47,17 +47,14 @@ Or in `mise.toml` for a project-scoped install:
 
 1. Set up the MCP server:
 
-**Claude Code (plugin):**
-
-```bash
-/plugin marketplace add alexmx/claude-tools
-/plugin install codechat@alexmx-tools
-```
-
-**Other agents:**
-
 ```bash
 codechat mcp --setup
+```
+
+Alternatively, install the [codechat skill](skills/codechat/SKILL.md) with [Skillman](https://github.com/alexmx/skillman) if you don't need the MCP server and prefer to use the CLI for your AI agent:
+
+```bash
+skillman install github.com/alexmx/codechat
 ```
 
 2. Ask the agent to review its changes. It calls `codechat_review`, you see:
