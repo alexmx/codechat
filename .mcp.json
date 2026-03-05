@@ -1,6 +1,8 @@
 {
-  "codechat": {
-    "command": "codechat",
-    "args": ["mcp"]
+  "mcpServers": {
+    "codechat": {
+      "command": "codechat",
+      "args": ["mcp"]
+    }
   }
 }
