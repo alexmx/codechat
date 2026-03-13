@@ -10,11 +10,17 @@ export interface CommentDraft {
   body: string;
 }
 
+export interface FileContent {
+  oldContent: string | null;
+  newContent: string | null;
+}
+
 interface ReviewState {
   session: Session | null;
   isConnected: boolean;
   isSubmitted: boolean;
   activeDraft: CommentDraft | null;
+  fileContents: Record<string, FileContent>;
 }
 
 type ReviewAction =
@@ -23,6 +29,7 @@ type ReviewAction =
   | { type: 'COMMENT_EDITED'; id: string; body: string }
   | { type: 'COMMENT_DELETED'; id: string }
   | { type: 'DIFF_UPDATED'; diff: string; files: FileSummary[] }
+  | { type: 'FILE_CONTENT'; filePath: string; oldContent: string | null; newContent: string | null }
   | { type: 'REVIEW_COMPLETE' }
   | { type: 'CONNECTION_STATUS'; connected: boolean }
   | { type: 'START_DRAFT'; filePath: string; line: number; side: 'old' | 'new'; endLine?: number }
@@ -34,6 +41,7 @@ const initialState: ReviewState = {
   isConnected: false,
   isSubmitted: false,
   activeDraft: null,
+  fileContents: {},
 };
 
 function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
@@ -74,10 +82,20 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       if (!state.session) return state;
       return {
         ...state,
+        // Clear cached file contents since diff changed (files may have been modified)
+        fileContents: {},
         session: {
           ...state.session,
           diff: action.diff,
           files: action.files,
+        },
+      };
+    case 'FILE_CONTENT':
+      return {
+        ...state,
+        fileContents: {
+          ...state.fileContents,
+          [action.filePath]: { oldContent: action.oldContent, newContent: action.newContent },
         },
       };
     case 'REVIEW_COMPLETE':
@@ -111,6 +129,7 @@ interface ReviewContextValue {
   startDraft: (filePath: string, line: number, side: 'old' | 'new', endLine?: number) => void;
   updateDraft: (body: string) => void;
   discardDraft: () => void;
+  requestFileContent: (filePath: string) => void;
 }
 
 const ReviewContext = createContext<ReviewContextValue | null>(null);
@@ -138,6 +157,9 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
       case 'diff_updated':
         dispatch({ type: 'DIFF_UPDATED', diff: msg.data.diff, files: msg.data.files });
         break;
+      case 'file_content':
+        dispatch({ type: 'FILE_CONTENT', filePath: msg.data.filePath, oldContent: msg.data.oldContent, newContent: msg.data.newContent });
+        break;
       case 'review_complete':
         dispatch({ type: 'REVIEW_COMPLETE' });
         setTimeout(() => window.close(), 500);
@@ -163,8 +185,12 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'DISCARD_DRAFT' });
   }, []);
 
+  const requestFileContent = useCallback((filePath: string) => {
+    send({ type: 'request_file_content', data: { filePath } });
+  }, [send]);
+
   return (
-    <ReviewContext.Provider value={{ state, send, startDraft, updateDraft, discardDraft }}>
+    <ReviewContext.Provider value={{ state, send, startDraft, updateDraft, discardDraft, requestFileContent }}>
       {children}
     </ReviewContext.Provider>
   );
