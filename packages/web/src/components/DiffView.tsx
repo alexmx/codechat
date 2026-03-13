@@ -417,56 +417,52 @@ interface ExpandButtonProps {
 }
 
 function ExpandButton({ collapsedCount, isFirst, isLast, onExpandUp, onExpandDown, onExpandAll }: ExpandButtonProps) {
-  // For small gaps, just show "expand all"
   const showDirectional = collapsedCount > EXPAND_LINES;
+
+  const gutterContent = (
+    <div className="expand-gutter">
+      {showDirectional && !isFirst && (
+        <button
+          onClick={onExpandUp}
+          className="expand-gutter-btn"
+          title={`Show ${EXPAND_LINES} lines above`}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M12.78 6.22a.75.75 0 0 1-1.06 0L8 2.5 4.28 6.22a.75.75 0 0 1-1.06-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06Z" />
+          </svg>
+        </button>
+      )}
+      <button
+        onClick={onExpandAll}
+        className="expand-gutter-btn"
+        title={`Expand all ${collapsedCount} hidden lines`}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M12.78 6.22a.75.75 0 0 1-1.06 0L8 2.5 4.28 6.22a.75.75 0 0 1-1.06-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06Zm-9.56 3.56a.75.75 0 0 1 1.06 0L8 13.5l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+        </svg>
+      </button>
+      {showDirectional && !isLast && (
+        <button
+          onClick={onExpandDown}
+          className="expand-gutter-btn"
+          title={`Show ${EXPAND_LINES} lines below`}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3.22 9.78a.75.75 0 0 1 1.06 0L8 13.5l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+
+  const codeContent = (
+    <span className="expand-text">{collapsedCount} hidden lines</span>
+  );
 
   return (
     <Decoration>
-      <div
-        className="flex items-center gap-2 px-3 py-0.5 text-xs select-none"
-        style={{
-          backgroundColor: 'var(--color-diff-expand-bg, var(--color-surface-bg))',
-          color: 'var(--color-text-muted)',
-          borderTop: '1px solid var(--color-border-default)',
-          borderBottom: '1px solid var(--color-border-default)',
-        }}
-      >
-        {showDirectional && !isFirst && (
-          <button
-            onClick={onExpandUp}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-[var(--color-elevated-bg)]"
-            style={{ color: 'var(--color-accent)' }}
-            title={`Expand ${EXPAND_LINES} lines up`}
-          >
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018L8.5 4.31V14.25a.75.75 0 0 1-1.5 0V4.31L3.53 7.78a.75.75 0 0 1-1.06 0Z" />
-            </svg>
-          </button>
-        )}
-        <button
-          onClick={onExpandAll}
-          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-[var(--color-elevated-bg)]"
-          style={{ color: 'var(--color-accent)' }}
-          title={`Expand all ${collapsedCount} hidden lines`}
-        >
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M1.75 10a.75.75 0 0 1 .75.75v2.5h2.5a.75.75 0 0 1 0 1.5h-3.25a.75.75 0 0 1-.75-.75v-3.25a.75.75 0 0 1 .75-.75Zm12.5 0a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-.75.75h-3.25a.75.75 0 0 1 0-1.5h2.5v-2.5a.75.75 0 0 1 .75-.75ZM2.5 2.75v2.5a.75.75 0 0 1-1.5 0V1.75A.75.75 0 0 1 1.75 1H5a.75.75 0 0 1 0 1.5H2.5Zm11 0H11a.75.75 0 0 1 0-1.5h3.25a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0v-2.5Z" />
-          </svg>
-          {collapsedCount} hidden lines
-        </button>
-        {showDirectional && !isLast && (
-          <button
-            onClick={onExpandDown}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-[var(--color-elevated-bg)]"
-            style={{ color: 'var(--color-accent)' }}
-            title={`Expand ${EXPAND_LINES} lines down`}
-          >
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M12.53 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L2.97 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l3.47 3.47V1.75a.75.75 0 0 1 1.5 0v9.94l3.47-3.47a.75.75 0 0 1 1.06 0Z" />
-            </svg>
-          </button>
-        )}
-      </div>
+      {gutterContent}
+      {codeContent}
     </Decoration>
   );
 }
