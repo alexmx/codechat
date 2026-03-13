@@ -15,8 +15,8 @@
   --diff-code-delete-edit-background-color: rgba(248, 81, 73, 0.4);
   --diff-code-selected-background-color: rgba(56, 139, 253, 0.15);
   --diff-omit-gutter-line-color: var(--color-text-muted);
-  --diff-gutter-insert-text: rgba(139, 148, 158, 0.85);
-  --diff-gutter-delete-text: rgba(139, 148, 158, 0.85);
+  --diff-gutter-insert-text: #adbac7;
+  --diff-gutter-delete-text: #adbac7;
   --diff-gutter-hover-bg: rgba(56, 139, 253, 0.4);
 
   /* Syntax highlighting tokens */
@@ -64,8 +64,8 @@
   --diff-selection-background-color: rgba(9, 105, 218, 0.2);
   --diff-gutter-insert-background-color: #ccffd8;
   --diff-gutter-delete-background-color: #ffd7d5;
-  --diff-gutter-insert-text: rgba(101, 109, 118, 0.85);
-  --diff-gutter-delete-text: rgba(101, 109, 118, 0.85);
+  --diff-gutter-insert-text: #4d5561;
+  --diff-gutter-delete-text: #4d5561;
   --diff-gutter-hover-bg: rgba(9, 105, 218, 0.3);
   --diff-code-insert-background-color: rgba(46, 160, 67, 0.1);
   --diff-code-delete-background-color: rgba(248, 81, 73, 0.1);
@@ -89,8 +89,8 @@
   --diff-selection-background-color: #264f78;
   --diff-gutter-insert-background-color: #1b4721;
   --diff-gutter-delete-background-color: #67060c;
-  --diff-gutter-insert-text: rgba(139, 148, 158, 0.85);
-  --diff-gutter-delete-text: rgba(139, 148, 158, 0.85);
+  --diff-gutter-insert-text: #adbac7;
+  --diff-gutter-delete-text: #adbac7;
   --diff-gutter-hover-bg: rgba(56, 139, 253, 0.4);
   --diff-code-insert-background-color: rgba(46, 160, 67, 0.15);
   --diff-code-delete-background-color: rgba(248, 81, 73, 0.15);
