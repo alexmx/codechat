@@ -221,9 +221,50 @@
   background-color: var(--color-surface-bg);
 }
 
+.diff-decoration-gutter {
+  background-color: var(--color-surface-bg);
+  border-top: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
+  vertical-align: middle;
+}
+
 .diff-decoration-content {
   color: var(--color-text-muted);
   padding: 4px 10px;
+  border-top: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+/* Expand gutter controls */
+.expand-gutter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 0;
+}
+
+.expand-gutter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.1s, color 0.1s;
+}
+
+.expand-gutter-btn:hover {
+  background-color: var(--color-info);
+  color: var(--color-text-on-emphasis);
+}
+
+.expand-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  user-select: none;
 }
 
 /* ── Syntax highlighting tokens ───────────────────────── */

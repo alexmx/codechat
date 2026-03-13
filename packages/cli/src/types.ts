@@ -51,10 +51,12 @@ export type ServerMessage =
   | { type: 'comment_edited'; data: { id: string; body: string } }
   | { type: 'comment_deleted'; data: { id: string } }
   | { type: 'diff_updated'; data: { diff: string; files: FileSummary[] } }
+  | { type: 'file_content'; data: { filePath: string; oldContent: string | null; newContent: string | null } }
   | { type: 'review_complete' };
 
 export type ClientMessage =
   | { type: 'add_comment'; data: Omit<Comment, 'id' | 'createdAt' | 'resolved'> }
   | { type: 'edit_comment'; data: { id: string; body: string } }
   | { type: 'delete_comment'; data: { id: string } }
-  | { type: 'submit_review'; data?: { summary?: string } };
+  | { type: 'submit_review'; data?: { summary?: string } }
+  | { type: 'request_file_content'; data: { filePath: string } };

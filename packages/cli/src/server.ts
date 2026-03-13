@@ -2,6 +2,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { watch, type FSWatcher } from 'node:fs';
 import { join, extname } from 'node:path';
 import { readFile, stat } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { z } from 'zod';
@@ -14,6 +16,8 @@ import type {
 } from './types.js';
 import { getDiff, parseFileSummaries } from './git.js';
 import { saveSession } from './session.js';
+
+const execAsync = promisify(execFile);
 
 const AddCommentSchema = z.object({
   type: z.literal('add_comment'),
@@ -43,11 +47,17 @@ const SubmitReviewSchema = z.object({
   }).optional(),
 });
 
+const RequestFileContentSchema = z.object({
+  type: z.literal('request_file_content'),
+  data: z.object({ filePath: z.string() }),
+});
+
 const ClientMessageSchema = z.discriminatedUnion('type', [
   AddCommentSchema,
   EditCommentSchema,
   DeleteCommentSchema,
   SubmitReviewSchema,
+  RequestFileContentSchema,
 ]);
 
 const MIME_TYPES: Record<string, string> = {
@@ -259,6 +269,36 @@ export async function startReviewServer(options: ServerOptions): Promise<ReviewS
               reviewSummary = msg.data.summary;
             }
             await doSubmit();
+            break;
+          }
+
+          case 'request_file_content': {
+            const { filePath } = msg.data;
+            // Prevent directory traversal
+            if (filePath.includes('..') || filePath.startsWith('/')) break;
+
+            let oldContent: string | null = null;
+            let newContent: string | null = null;
+
+            // Get the old version from HEAD
+            try {
+              const { stdout } = await execAsync(
+                'git', ['show', `HEAD:${filePath}`],
+                { cwd: session.repoPath, maxBuffer: 10 * 1024 * 1024 },
+              );
+              oldContent = stdout;
+            } catch {
+              // File may not exist in HEAD (new file)
+            }
+
+            // Get the new version from the working tree
+            try {
+              newContent = await readFile(join(session.repoPath, filePath), 'utf-8');
+            } catch {
+              // File may have been deleted
+            }
+
+            send(ws, { type: 'file_content', data: { filePath, oldContent, newContent } });
             break;
           }
         }

@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, type ReactNode } from 'react';
-import { parseDiff, Diff, Hunk, tokenize, markEdits } from 'react-diff-view';
+import { useState, useMemo, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { parseDiff, Diff, Hunk, Decoration, tokenize, markEdits, expandFromRawCode, getCollapsedLinesCountBetween } from 'react-diff-view';
 import { refractor } from 'refractor';
 import tsx from 'refractor/tsx';
 import jsx from 'refractor/jsx';
@@ -23,6 +23,9 @@ const refractorAdapter = {
   highlight: (code: string, language: string) => refractor.highlight(code, language).children,
   registered: (lang: string) => refractor.registered(lang),
 };
+
+/** Number of lines to expand per click */
+const EXPAND_LINES = 20;
 
 interface DiffViewProps {
   activeFile: string | null;
@@ -153,27 +156,68 @@ interface FileDiffSectionProps {
   showResolved: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyHunk = any;
+
 function FileDiffSection({ file, filePath, viewType, comments, showResolved }: FileDiffSectionProps) {
-  const { state, startDraft, discardDraft } = useReview();
+  const { state, startDraft, discardDraft, requestFileContent } = useReview();
   const draft = state.activeDraft?.filePath === filePath ? state.activeDraft : null;
+  const fileContent = state.fileContents[filePath];
+
+  // Track expanded hunks independently from the parsed diff
+  const [expandedHunks, setExpandedHunks] = useState<AnyHunk[] | null>(null);
+  const pendingExpand = useRef<{ start: number; end: number } | null>(null);
+
+  // Use the old file content as the source for expansion (old line numbers are the reference)
+  const rawSource = fileContent?.oldContent ?? fileContent?.newContent ?? null;
+
+  const hunks = expandedHunks ?? file.hunks;
+
+  const expand = useCallback(
+    (start: number, end: number) => {
+      if (!rawSource) {
+        // Request file content; queue the expand for when it arrives
+        pendingExpand.current = { start, end };
+        requestFileContent(filePath);
+        return;
+      }
+      setExpandedHunks((prev) => {
+        const current = prev ?? file.hunks;
+        return expandFromRawCode(current, rawSource, start, end);
+      });
+    },
+    [rawSource, file.hunks, filePath, requestFileContent],
+  );
+
+  // Apply pending expansion when file content arrives
+  useEffect(() => {
+    if (rawSource && pendingExpand.current) {
+      const { start, end } = pendingExpand.current;
+      pendingExpand.current = null;
+      setExpandedHunks((prev) => {
+        const current = prev ?? file.hunks;
+        return expandFromRawCode(current, rawSource, start, end);
+      });
+    }
+  }, [rawSource, file.hunks]);
 
   const tokens = useMemo(() => {
     const language = detectLanguage(filePath);
-    if (!language || file.hunks.length === 0) return undefined;
+    if (!language || hunks.length === 0) return undefined;
     if (!refractorAdapter.registered(language)) return undefined;
     try {
-      return tokenize(file.hunks, {
+      return tokenize(hunks, {
         highlight: true,
         refractor: refractorAdapter,
         language,
-        enhancers: [markEdits(file.hunks)],
+        enhancers: [markEdits(hunks)],
       });
     } catch {
       return undefined;
     }
-  }, [file.hunks, filePath]);
+  }, [hunks, filePath]);
 
-  const changeKeyMap = useMemo(() => buildChangeKeyMap(file.hunks), [file.hunks]);
+  const changeKeyMap = useMemo(() => buildChangeKeyMap(hunks), [hunks]);
 
   const handleDragSelect = useCallback(
     (side: 'old' | 'new', startLine: number, endLine: number) => {
@@ -183,7 +227,7 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
   );
 
   const { gutterEvents, selectedChanges } = useGutterDrag({
-    hunks: file.hunks,
+    hunks,
     onSelect: handleDragSelect,
   });
 
@@ -241,6 +285,13 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
     return w;
   }, [comments, draftChangeKey, draft, filePath, changeKeyMap, showResolved, startDraft, discardDraft]);
 
+  // Reset expanded hunks when the underlying diff changes
+  const [prevFileHunks, setPrevFileHunks] = useState(file.hunks);
+  if (file.hunks !== prevFileHunks) {
+    setPrevFileHunks(file.hunks);
+    setExpandedHunks(null);
+  }
+
   if (file.hunks.length === 0) {
     return (
       <div
@@ -257,6 +308,82 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
     );
   }
 
+  // Determine total lines for the file (from raw source or last hunk)
+  const totalLines = rawSource
+    ? (typeof rawSource === 'string' ? rawSource.split('\n').length : rawSource.length)
+    : null;
+
+  const renderHunks = (hunkList: AnyHunk[]) => {
+    const elements: ReactNode[] = [];
+
+    for (let i = 0; i < hunkList.length; i++) {
+      const hunk = hunkList[i];
+      const prevHunk: AnyHunk | null = i > 0 ? hunkList[i - 1] : null;
+
+      // Collapsed lines before this hunk
+      const collapsedCount = getCollapsedLinesCountBetween(prevHunk, hunk);
+
+      if (collapsedCount > 0) {
+        elements.push(
+          <ExpandButton
+            key={`expand-${i}`}
+            collapsedCount={collapsedCount}
+            isFirst={i === 0}
+            isLast={false}
+            onExpandUp={() => {
+              const end = hunk.oldStart;
+              const start = Math.max(prevHunk ? prevHunk.oldStart + prevHunk.oldLines : 1, end - EXPAND_LINES);
+              expand(start, end);
+            }}
+            onExpandDown={() => {
+              const start = prevHunk ? prevHunk.oldStart + prevHunk.oldLines : 1;
+              const end = Math.min(hunk.oldStart, start + EXPAND_LINES);
+              expand(start, end);
+            }}
+            onExpandAll={() => {
+              const start = prevHunk ? prevHunk.oldStart + prevHunk.oldLines : 1;
+              const end = hunk.oldStart;
+              expand(start, end);
+            }}
+          />,
+        );
+      }
+
+      elements.push(<Hunk key={hunk.content} hunk={hunk} />);
+    }
+
+    // Collapsed lines after the last hunk
+    if (totalLines && hunkList.length > 0) {
+      const lastHunk = hunkList[hunkList.length - 1];
+      const lastOldEnd = lastHunk.oldStart + lastHunk.oldLines;
+      const trailingLines = totalLines - lastOldEnd + 1;
+
+      if (trailingLines > 0) {
+        elements.push(
+          <ExpandButton
+            key="expand-tail"
+            collapsedCount={trailingLines}
+            isFirst={false}
+            isLast={true}
+            onExpandUp={() => {
+              const start = lastOldEnd;
+              const end = Math.min(totalLines + 1, start + EXPAND_LINES);
+              expand(start, end);
+            }}
+            onExpandDown={() => {
+              expand(lastOldEnd, totalLines + 1);
+            }}
+            onExpandAll={() => {
+              expand(lastOldEnd, totalLines + 1);
+            }}
+          />,
+        );
+      }
+    }
+
+    return elements;
+  };
+
   return (
     <div
       className="overflow-x-auto rounded-b-md"
@@ -268,14 +395,74 @@ function FileDiffSection({ file, filePath, viewType, comments, showResolved }: F
       <Diff
         viewType={viewType}
         diffType={file.type}
-        hunks={file.hunks}
+        hunks={hunks}
         widgets={widgets}
         tokens={tokens}
         gutterEvents={gutterEvents}
         selectedChanges={selectedChanges}
       >
-        {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
+        {renderHunks}
       </Diff>
     </div>
+  );
+}
+
+interface ExpandButtonProps {
+  collapsedCount: number;
+  isFirst: boolean;
+  isLast: boolean;
+  onExpandUp: () => void;
+  onExpandDown: () => void;
+  onExpandAll: () => void;
+}
+
+function ExpandButton({ collapsedCount, isFirst, isLast, onExpandUp, onExpandDown, onExpandAll }: ExpandButtonProps) {
+  const showDirectional = collapsedCount > EXPAND_LINES;
+
+  const gutterContent = (
+    <div className="expand-gutter">
+      {showDirectional && !isFirst && (
+        <button
+          onClick={onExpandUp}
+          className="expand-gutter-btn"
+          title={`Show ${EXPAND_LINES} lines above`}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M12.78 6.22a.75.75 0 0 1-1.06 0L8 2.5 4.28 6.22a.75.75 0 0 1-1.06-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06Z" />
+          </svg>
+        </button>
+      )}
+      <button
+        onClick={onExpandAll}
+        className="expand-gutter-btn"
+        title={`Expand all ${collapsedCount} hidden lines`}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M12.78 6.22a.75.75 0 0 1-1.06 0L8 2.5 4.28 6.22a.75.75 0 0 1-1.06-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06Zm-9.56 3.56a.75.75 0 0 1 1.06 0L8 13.5l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+        </svg>
+      </button>
+      {showDirectional && !isLast && (
+        <button
+          onClick={onExpandDown}
+          className="expand-gutter-btn"
+          title={`Show ${EXPAND_LINES} lines below`}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3.22 9.78a.75.75 0 0 1 1.06 0L8 13.5l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+
+  const codeContent = (
+    <span className="expand-text">{collapsedCount} hidden lines</span>
+  );
+
+  return (
+    <Decoration>
+      {gutterContent}
+      {codeContent}
+    </Decoration>
   );
 }
